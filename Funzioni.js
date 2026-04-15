@@ -1,26 +1,9 @@
+
 console.log("Funzioni.js caricato automaticamente!");
-function eliminaDB() {
-	if (!confirm("Sei sicuro di voler cancellare tutto il DB?")) return;
 
-	db.close();
-	const request = indexedDB.deleteDatabase("ArmadioDB");
+//--------------------------------------------------------------------------------------- FUNZIONI ARTICOLO 
+window.salvaNuovoArticolo = async function () {
 
-	request.onsuccess = () => {
-		alert("Database eliminato con successo");
-	};
-
-	request.onerror = () => {
-		alert("Errore nell'eliminazione del database");
-	};
-
-	request.onblocked = () => {
-		alert("Eliminazione bloccata (chiudi altre connessioni)");
-	};
-
-	db.open();
-}
-
-function salvaNuovoArticolo() {
 	const Titolo = document.getElementById("Titolo").value;
 	const Categoria = document.getElementById("Categoria").value;
 	const Tipo = document.getElementById("Tipo").value;
@@ -28,212 +11,326 @@ function salvaNuovoArticolo() {
 	const Stagione = document.getElementById("Stagione").value;
 	const file = document.getElementById("Foto").files[0];
 
-	if (!file) return alert("Seleziona una foto");
+	if (!file) {
+		alert("Seleziona una foto");
+		return;
+	}
 
-	//Aggiungo al Table del BD la nuova IMMAGINE
-	const reader = new FileReader();
-	reader.onload = function () {
-		const tx = db.transaction("vestiti", "readwrite");
-		const store = tx.objectStore("vestiti");
+	document.getElementById("pageOverlay").style.display = "flex";
 
-		store.add({
-			Immagine: reader.result
-			, Titolo: Titolo
-			, Categoria: Categoria
-			, Tipo: Tipo
-			, Colore: Colore
-			, Stagione: Stagione
-		});
+	try {
+		//Carico Foto
+		const fileName = Date.now() + "_" + file.name
 
-		tx.oncomplete = () => {
-			alert("Articolo inserito \nVisualizzalo nel armadio");
+		await client.storage
+			.from("ImageArticoli")
+			.upload(fileName, file)
 
-			//Svuoto campi
-			document.getElementById("Titolo").value = "";
-			document.getElementById("Categoria").value = "";
-			document.getElementById("Tipo").value = "";
-			document.getElementById("Colore").value = "";
-			document.getElementById("Stagione").value = "";
-			document.getElementById("Foto").value ="";
-		};
-	};
+		const { data } = client.storage
+			.from("ImageArticoli")
+			.getPublicUrl(fileName)
 
-	reader.readAsDataURL(file);
+		const imageUrl = data.publicUrl
+
+		//Salvo Row
+		await client
+			.from('Articoli')
+			.insert([{
+				Titolo: Titolo,
+				Categoria: Categoria,
+				Tipo: Tipo,
+				Colore: Colore,
+				Stagione: Stagione,
+				Preferita: false,
+				Immagine: imageUrl
+			}])
+
+		alert("Articolo salvato!");
+		mostraToast("Salvato con successo", "success");
+
+		// reset campi
+		document.getElementById("Titolo").value = "";
+		document.getElementById("Foto").value = "";
+
+
+	} catch (err) {
+		console.error(err);
+		alert("Errore salvataggio");
+	}
+	document.getElementById("pageOverlay").style.display = "none";
 }
 
-function mostraArticoli() {
-	let i = 0;
+window.mostraArticoli = async function () {
+	const { data } = await client
+		.from('Articoli')
+		.select('*')
 
-	//Titolo
-	document.getElementById("title").textContent = "Miei articoli";	
-	document.getElementById("sottoTitolo").textContent = "";
+	const lista = document.getElementById('lista')
+	lista.innerHTML = ''
 
-	//Mostro / Nascondo DIV
-	document.getElementById("DivDettagliArticolo").style.display = "none";
-	document.getElementById("mieiOutfit").style.display = "none";
-	document.getElementById("mieiOutfit").innerHTML = "";
-	document.getElementById("mieiArticoli").style.display = "block";
-	document.getElementById("search").style.display = "block";
-	document.getElementById("btnCreaOutfit").style.display = "none";
+	data.forEach(item => {
 
-	const lista = document.getElementById("mieiArticoli");
+		const li = document.createElement('li')
+		li.innerHTML = `
+                <div>
+			<b>${item.Titolo}</b> - ${item.Categoria}
+			<br>
+			<img src="${item.Immagine}" width="120">
+			</div>                       
+  		`
+
+		lista.appendChild(li)
+	})
+}
+
+window.visualizzaArticoli = async function (IdLista, table, tipoS) {
+	
+	let { data } = await client
+		.from(table)
+		.select('*')
+
+	const lista = document.getElementById(IdLista);
 	lista.innerHTML = "";
 
-	const tx = db.transaction("vestiti", "readonly");
-	const store = tx.objectStore("vestiti");
-	
-	//Passa tutti i vestiti e li mostra
-	store.openCursor().onsuccess = function (e) {
-	const cursor = e.target.result;
-		
-		if (!cursor) {
-			//Quando ha finito il giro
-			if (i == 0) {
-				//Vuoto
+	//Se non ho ROW
+	if (data.length == 0) {
+		switch (tipoS) {
+			case "MioArmadio":
 				document.getElementById("sottoTitolo").textContent = "Nessun articolo caricato";
-			}
-			return;
+				break;
+			case "ArticoliSelezionabili":
+				arrayId = [];
+
+				document.getElementById("sottoTitolo").textContent = "Nessun articolo disponibile";
+				break;
+			case "ArticoliPreferiti":
+				document.getElementById("sottoTitolo").textContent = "Nessun articolo PREFERITO caricato";
+				break;
+			case "ModificaArticoliSelezionabili":
+				document.getElementById("sottoTitolo").textContent = "Nessun articolo disponibile";
+				break;
 		}
+	}
 
-		const item = cursor.value;
-		i++;
+	if (tipoS === "ArticoliSelezionabili") {
+		arrayId = [];
 
-		const div = document.createElement("div");
-		div.className = "col-6 col-md-2 d-flex flex-column p-2";
-		div.innerHTML = `
-						<img src="${item.Immagine}" class="rounded-2 " style="height:100px">
+		let divDati = divDatiOutfit();
+		lista.appendChild(divDati);
 
-						<label style="position: absolute;">
-						  <input type="checkbox" style="display: none;">
-						  <span class="cuore">❤</span>
-						</label>
+		const titoloOutfit = divDati.querySelector('input[type="text"]');
+		const dataOutfit = divDati.querySelector('input[type="date"]');	
 
-						<div class="d-flex flex-column rounded-2 p-2" style="background-color:white">
-							<span class="dynamic-text fw-bold">${item.Titolo}</span>
-							<span class="dynamic-text">${item.Colore}</span>
-							<span class="dynamic-text">${item.Categoria}</span>
-						</div>
-					`;
+		titoloOutfit.addEventListener('input', () => {
+			TitoloOutfit = titoloOutfit.value;
+		});
 
-		lista.appendChild(div);
+		titoloOutfit.addEventListener('change', () => {
+			DataOutfit = dataOutfit.value;
+		});
+	}
+
+	//Passa tutti i vestiti e li mostra
+	data.forEach(item => {
+
+		// Stampo i DIV adatti
+		let div = divArticolo(tipoS, item);
+
+		if (tipoS === "ArticoliPreferiti") {
+			if (item.Preferita) {
+				lista.appendChild(div);
+			}
+		} else if (tipoS === "FiltroArticoli") {
+
+			if (
+				(categoriaValue == "" || item.Categoria === categoriaValue) &&
+				(tipoValue == "" || item.Tipo === tipoValue) &&
+				(coloreValue == "" || item.Colore === coloreValue) &&
+				(stagioneValue == "" || item.Stagione === stagioneValue)
+			) {
+				lista.appendChild(div);
+			}
+
+		} else if (tipoS === "FiltroTitolo") {
+
+			//Mostro solo quelli che contengono il VALUE nel Titolo
+			let filetTitle = document.getElementById("filterTitle").value;
+
+			if (filetTitle === "") {
+				lista.appendChild(div);
+			} else if (item.Titolo.includes(filetTitle)) {
+				lista.appendChild(div);
+			}
+
+		} else {
+			lista.appendChild(div);
+		}
 
 		// Doppio click
 		div.addEventListener('dblclick', () => {
-			idArticolo = item.id;
+			idArticolo = item.IdArticolo;
 
-			//Titolo
-			document.getElementById("title").textContent = "";
-			document.getElementById("sottoTitolo").textContent = "";
+			visualizzaDiv("VisualizzaArticolo");
 
-			//Mostro / Nascondo DIV
-			document.getElementById("DivDettagliArticolo").style.display = "block";
-			document.getElementById("mieiOutfit").style.display = "none";
-			document.getElementById("mieiOutfit").innerHTML = "";
-			document.getElementById("mieiArticoli").style.display = "none";
-			document.getElementById("mieiArticoli").innerHTML = "";
-			document.getElementById("divModificaArticolo").style.display = "block";
-			document.getElementById("divNuovoArticolo").style.display = "none";
-
+			//Popola Select --> IdSelect , DefaultValue, array
+			popolaSelect("Categoria", item.Categoria, categoria);
+			popolaSelect("Tipo", item.Tipo, tipo);
+			popolaSelect("Colore", item.Colore, colore);
+			popolaSelect("Stagione", item.Stagione, stagione);
 
 			//Mostro Dettagli
 			document.getElementById("Titolo").value = item.Titolo;
 			document.getElementById("Titolo").disabled = true;
-			document.getElementById("Categoria").value = item.Categoria;
 			document.getElementById("Categoria").disabled = true;
-			document.getElementById("Tipo").value = item.Tipo;
 			document.getElementById("Tipo").disabled = true;
-			document.getElementById("Colore").value = item.Colore;
 			document.getElementById("Colore").disabled = true;
-			document.getElementById("Stagione").value = item.Stagione;
 			document.getElementById("Stagione").disabled = true;
 			document.getElementById("Immagine").src = item.Immagine;
 			document.getElementById("btnSalvaModificheArticolo").disabled = true;
-			document.getElementById("search").style.display = "none";
 			document.getElementById("btnCreaOutfit").style.display = "none";
+			document.getElementById("btnArticoliPreferiti").style.display = "none";
 		});
 
-		cursor.continue();		  
-	};
+		//Metto tra i preferiti
+		const checkbox = div.querySelector('input[type="checkbox"]');
+
+		checkbox.addEventListener('change', () => {
+			idArticolo = item.IdArticolo;
+
+			switch (tipoS) {
+				case "MioArmadio":
+				case "ArticoliPreferiti":
+				case "FiltroArticoli":
+
+					//Salva Modifiche
+					salvaModificheArticolo(tipoS, checkbox.checked);
+
+					break;
+				case "ArticoliSelezionabili":
+
+					if (checkbox.checked == true) {
+						//Salvo ID
+						arrayId.push(item.IdArticolo);
+					} else {
+						//Tolgo ID
+						arrayId = arrayId.filter(id => id !== item.IdArticolo);
+					}
+
+					break;
+				case "ModificaArticoliSelezionabili":
+
+					if (checkbox.checked == true) {
+						//Salvo ID
+						arrayId.push(item.IdArticolo);
+					} else {
+						//Tolgo ID
+						arrayId = arrayId.filter(id => id !== item.IdArticolo);
+					}
+
+					break;
+			}
+		});
+	})
 }
 
-function eliminaArticolo() {
+window.eliminaArticolo = async function () {
 
 	if (!confirm("Sei sicuro di voler eliminare l'articolo? ")) { return; }
 
-	//Salvo Id dei vari articoli 
-	const tx = db.transaction("vestiti", "readwrite");
-	const store = tx.objectStore("vestiti");
+	//Elimino la ROW
+	const { data, error } = await client
+		.from('Articoli')
+		.delete()
+		.eq('IdArticolo', idArticolo)
 
-	//Elimino 1 sola riga
-	store.delete(idArticolo);
+	if (error) {
+		console.error(error);
+		mostraToast("Errore eliminazione", "error");
+		return;
+	}
 
-	tx.oncomplete = () => {
-		alert("Articolo eliminato");
-		mostraArticoli();
-	};
+	mostraToast("Articolo eliminato", "success");
+
+	//Mostro i Div che servono
+	visualizzaDiv("MioArmadio");
+
+	//mostraArticoli();
+	visualizzaArticoli("mieiArticoli", "Articoli", "MioArmadio");
 }
 
-function modificaArticolo() {
-	document.getElementById("btnModificaArticolo").disabled = true;
-	document.getElementById("btnSalvaModificheArticolo").disabled = false;
+window.salvaModificheArticolo = async function (tipoS, preferita) {
 
+	switch (tipoS) {
+		case "ArticoliPreferiti":
+		case "MioArmadio":
+		case "FiltroArticoli":
+
+			//Salvo Row
+			await client
+				.from('Articoli')
+				.update({
+					Preferita: preferita
+				})
+				.eq('IdArticolo', idArticolo)
+
+		case "BtnSalva":
+			//Salvo Modifiche Dettagli
+			const Titolo = document.getElementById("Titolo").value;
+			const Categoria = document.getElementById("Categoria").value;
+			const Tipo = document.getElementById("Tipo").value;
+			const Colore = document.getElementById("Colore").value;
+			const Stagione = document.getElementById("Stagione").value;
+			const Immagine = document.getElementById("Immagine").src;
+
+			await client
+				.from('Articoli')
+				.update({
+					Immagine: Immagine
+					, Titolo: Titolo
+					, Categoria: Categoria
+					, Tipo: Tipo
+					, Colore: Colore
+					, Stagione: Stagione
+					, Preferita: preferita
+				})
+				.eq('IdArticolo', idArticolo)
+							
+			break;
+	}
+	
+	//riagiorno la vista degli articoli
+	if (tipoS === "ArticoliPreferiti") {
+
+		visualizzaArticoli("mieiArticoli", "Articoli", "ArticoliPreferiti");
+
+	} else if (tipoS === "MioArmadio") {
+
+		//Mostro i Div che servono
+		visualizzaDiv("MioArmadio");
+
+		visualizzaArticoli("mieiArticoli", "Articoli", "MioArmadio");
+
+	} else if (tipoS === "BtnSalva") {
+
+		mostraToast("Articolo modificato", "success");
+
+		//Mostro i Div che servono
+		visualizzaDiv("MioArmadio");
+
+		visualizzaArticoli("mieiArticoli", "Articoli", "MioArmadio");
+	}
+}
+
+window.modificaArticolo = function () {
 	//Mostro Dettagli
 	document.getElementById("Titolo").disabled = false;
 	document.getElementById("Categoria").disabled = false;
 	document.getElementById("Tipo").disabled = false;
 	document.getElementById("Colore").disabled = false;
 	document.getElementById("Stagione").disabled = false;
-
 }
 
-function salvaModificheArticolo() {
-	//Salvo Modifiche Dettagli
-	const Titolo = document.getElementById("Titolo").value;
-	const Categoria = document.getElementById("Categoria").value;
-	const Tipo = document.getElementById("Tipo").value;
-	const Colore = document.getElementById("Colore").value;
-	const Stagione = document.getElementById("Stagione").value;
-	const Immagine = document.getElementById("Immagine").src;
-
-	//Aggiorna 1 riga con Immagine
-	const tx = db.transaction("vestiti", "readwrite");
-	const store = tx.objectStore("vestiti");
-
-	const articoloAggiornato = {
-		id: idArticolo
-		, Immagine: Immagine
-		, Titolo: Titolo
-		, Categoria: Categoria
-		, Tipo: Tipo
-		, Colore: Colore
-		, Stagione: Stagione
-	};
-
-	store.put(articoloAggiornato);
-
-	tx.oncomplete = () => {
-		alert("Articolo modificato");
-		mostraArticoli();
-	};
-}
-
-function aggiungiArticolo() {
-	//Titolo
-	document.getElementById("title").textContent = "Aggiungi nuovo articolo";
-	document.getElementById("sottoTitolo").textContent = "";
-
-	//Mostro / Nascondo DIV
-	document.getElementById("DivDettagliArticolo").style.display = "block";
-	document.getElementById("mieiOutfit").style.display = "none";
-	document.getElementById("mieiOutfit").innerHTML = "";
-	document.getElementById("mieiArticoli").style.display = "none";
-	document.getElementById("mieiArticoli").innerHTML = "";
-	document.getElementById("sottoTitolo").style.display = "none";
-	document.getElementById("divModificaArticolo").style.display = "none";
-	document.getElementById("divNuovoArticolo").style.display = "block";
-	document.getElementById("search").style.display = "none";
-	document.getElementById("btnCreaOutfit").style.display = "none";
-
+window.aggiungiArticolo = function () {
 	//Svuoto e rendo editabili i campi
 	document.getElementById("Titolo").value = "";
 	document.getElementById("Titolo").disabled = false;
@@ -247,199 +344,474 @@ function aggiungiArticolo() {
 	document.getElementById("Stagione").disabled = false;
 }
 
-function exportJson() {
-		
-	  const tx = db.transaction("vestiti", "readonly");
-	  const store = tx.objectStore("vestiti");
-	
-	  const tuttiVestiti = [];
-	
-	  //Passa tutti i vestiti e li mostra
-	  store.openCursor().onsuccess = function (e) {
-		const cursor = e.target.result;
-		
-		//Salvo tutti i dati in un JSON
-		if (cursor) {
-            tuttiVestiti.push(cursor.value);
-            cursor.continue();
-        } else {
-            // Qui tutti i vestiti sono stati raccolti
-            const jsonString = JSON.stringify(tuttiVestiti, null, 2);            
-            alert("JSON --> " + jsonString);
-            console.log("JSON --> " + jsonString);
-        }
-		
-	  };
+window.divArticolo = function (tipoS, item) {
+
+	let trovaId = tipoS === "ModificaArticoliSelezionabili" ? arrayId.filter(id => id == item.IdArticolo) : null;
+
+	let div = document.createElement("div")
+	div.className = "col-6 col-md-2 d-flex flex-column p-2";
+	div.innerHTML = `
+					${tipoS === "ArticoliSelezionabili" || tipoS === "ModificaArticoliSelezionabili" ? '<div class="d-flex flex-column rounded-2 p-2" style="background-color:white">' : ''}
+					<img src="${item.Immagine}" class="rounded-2 " style="height:200px">
+
+					${tipoS === "MioArmadio" || tipoS === "ArticoliPreferiti" || tipoS === "FiltroArticoli" || tipoS === "FiltroTitolo" ? `
+					<label style="position: absolute;">
+						<input type="checkbox" style="display: none;" ${item.Preferita ? "checked" : ""}>
+						<span class="cuore">${item.Preferita ? "❤️" : "❤"}</span>
+					</label>
+					` : ''} 
+
+					<div class="d-flex flex-column rounded-2 p-2" style="background-color:white">
+						<span class="dynamic-text fw-bold">${item.Titolo}</span>
+						<span class="dynamic-text">${item.Colore}</span>
+						<span class="dynamic-text">${item.Categoria}</span>
+						${tipoS === "ArticoliSelezionabili" || tipoS === "ModificaArticoliSelezionabili" ? `<input type="checkbox" class="mb-2" ${tipoS === "ModificaArticoliSelezionabili" && trovaId && trovaId.length > 0 ? "checked" : ""}>` : ''}
+
+					</div>
+					${tipoS === "ArticoliSelezionabili" || tipoS === "ModificaArticoliSelezionabili" ? '</div>' : ''}
+				`;
+
+	return div;
+
 }
 
-function mostraArticoliCliccabili() {
+window.divOutfit_Articolo = function (tipoS, item) {
+
+	let div = document.createElement("div")
+	div.className = "col-6 col-md-2 d-flex flex-column p-2";
+	div.innerHTML = `
+					<img src="${item.Articoli.Immagine}" class="rounded-2 " style="height:200px">
+						
+					<div class="d-flex flex-column rounded-2 p-2" style="background-color:white">
+						<span class="dynamic-text fw-bold">${item.Articoli.Titolo}</span>
+						<span class="dynamic-text">${item.Articoli.Colore}</span>
+						<span class="dynamic-text">${item.Articoli.Categoria}</span>
+					</div>
+				`;
+	return div;
+}
+//--------------------------------------------------------------------------------------- FUNZIONI OUTFIT 
+window.visualizzaOutfit = async function (daBtn) {
 	let i = 0;
+	const oggi = new Date().toISOString().split('T')[0];
 
-	//Titolo
-	document.getElementById("title").textContent = "Seleziona piu articoli";
-	document.getElementById("sottoTitolo").textContent = "";
+	//Prendo solo gli Outfit con la data di oggi
+	let query = client
+		.from('Outfit')
+		.select(`
+		*,
+		Outfit_Articoli(
+			Articoli(*)
+		)
+	`);
 
-	//Mostro / Nascondo DIV
-	document.getElementById("DivDettagliArticolo").style.display = "none";
-	document.getElementById("mieiOutfit").style.display = "none";
-	document.getElementById("mieiOutfit").innerHTML = "";
-	document.getElementById("mieiArticoli").style.display = "block";
-	document.getElementById("search").style.display = "none";
-	document.getElementById("btnCreaOutfit").style.display = "block";	
+	if (!daBtn) {
+		query = query.eq('DataUtilizzo', oggi);
+	}
 
-	const lista = document.getElementById("mieiArticoli");
+	const { data: outfitArticoliTable, error } = await query;
+		
+	if (error) {
+		console.error(error);
+	} else {
+		console.log(outfitArticoliTable);
+	}
+
+	const lista = document.getElementById("mieiOutfit");
 	lista.innerHTML = "";
 
-	const tx = db.transaction("vestiti", "readonly");
-	const store = tx.objectStore("vestiti");
+	if (outfitArticoliTable.length == 0) {
+		document.getElementById("sottoTitolo").textContent = "Nessun outfit creato";
+	}
 
-	arrayId = [];
+	//Passa tutti gli Outfit e li mostra
+	outfitArticoliTable.forEach(outfit => {		
 
-	//Passa tutti i vestiti e li mostra
-	store.openCursor().onsuccess = function (e) {
-		const cursor = e.target.result;
+		//Div Che contiene gli Outfit
+		const divGruppo = document.createElement("div");
+		divGruppo.className = "row d-flex aling-items-center justify-content-center";
+		divGruppo.innerHTML = `	
+								<div class="col-12 d-flex flex-row justify-content-between p-2 gap-2">
+									<span class="dynamic-text">Outfit N° ${i} - ${outfit.Titolo}</span>	
+									<div>
+										<button id="btnDuplicaOutfit" class="btn dynamic-btn btn-success p-2">📚 Duplica</button>
+										<button id="btnModificaOutfit" class="btn dynamic-btn btn-success p-2">✏️ Modifica</button>
+										<button id="btnEliminaOutfit" class="btn dynamic-btn btn-success p-2">🗑️ Elimina</button>
+									</div>
+								</div>
+							`;
 
-		if (!cursor) {
-			//Quando ha finito il giro
-			if (i == 0) {
-				//Vuoto
-				document.getElementById("sottoTitolo").textContent = "Nessun articolo disponibile";
-			}
-			return;
-		}
-
-		const item = cursor.value;
-		i++;
-
-		const div = document.createElement("div");
-		div.className = "col-6 col-md-2 d-flex flex-column p-2";
-		div.innerHTML = `
-			<div class="d-flex flex-column rounded-2 p-2" style="background-color:white">
-				<img src="${item.Immagine}" class="rounded-2 " style="height:100px">				
-				<span class="dynamic-text fw-bold">${item.Titolo}</span>
-				<span class="dynamic-text">${item.Colore}</span>
-				<span class="dynamic-text">${item.Categoria}</span>		
-				<input type="checkbox" class="mb-2"></input>
-			</div>
-		`;
-
-		lista.appendChild(div);
-
-		const checkbox = div.querySelector('input[type="checkbox"]');
-
-		checkbox.addEventListener('change', () => {
-
-			if (checkbox.checked == true) {
-				//Salvo ID
-				arrayId.push(item.id);
-			} else {
-				//Tolgo ID
-				arrayId = arrayId.filter(id => id !== item.id);
-			}		
+		//Posiziono tutti gli articolo per questo Outfit
+		outfit.Outfit_Articoli.forEach(articoli => {
+			let div = divOutfit_Articolo("Outfit", articoli);
+			divGruppo.appendChild(div); if (!articoli) return;
+			lista.appendChild(divGruppo);
 		});
 
-		cursor.continue();
-	};
+		//Gestisco i click dei BTN
+		const btnDuplica = divGruppo.querySelector('#btnDuplicaOutfit');
+		const btnModifica = divGruppo.querySelector('#btnModificaOutfit');
+		const btnElimina = divGruppo.querySelector('#btnEliminaOutfit');
+
+		btnDuplica.addEventListener('click', async () => {
+						
+			//Ottengo le riga con lo stesso ID
+			let articoli = outfitArticoliTable.find(item => item.IdOutfit == outfit.IdOutfit);
+
+			//Copio le righe
+			const { data, error } = await client
+				.from('Outfit')
+				.insert([{
+					Titolo: outfit.Titolo,
+					DataUtilizzo: outfit.DataUtilizzo
+				}])
+				.select() //ritorna la riga creata
+				.single() //ne ho creato solo 1
+
+			if (error) {
+				console.error(error);
+				mostraToast("Errore nella creazione del outfit", "error");
+				return;
+			}
+
+			//No foreach perche ho un Async
+			for (let item of articoli.Outfit_Articoli) {
+				const { error: error1 } = await client
+					.from('Outfit_Articoli')
+					.insert([{
+						IdOutfit: data.IdOutfit,
+						IdArticolo: item.Articoli.IdArticolo
+					}]);
+
+				if (error1) {
+					console.error(error1);
+					mostraToast("Errore nella creazione del Outfit_Articoli " + error1, "error");
+					return;
+				}
+			}
+
+			alert("Outfit Duplicato con successo!");
+			
+			visualizzaDiv("Outfit");
+			visualizzaOutfit(false);
+		});
+
+		btnModifica.addEventListener('click', async () => {
+
+			////Mostro il nuovo Outft con flag su articoli già presenti
+			idOutfit = item.IdOutfit;
+			arrayId = item.IdArticolo;
+
+			console.log(arrayId + "arrayId")
+
+			visualizzaDiv("ModificaArticoliSelezionabili");
+
+			visualizzaArticoli("mieiArticoli", "Articoli", "ModificaArticoliSelezionabili");
+		});
+
+		btnElimina.addEventListener('click', async () => {
+
+			//Elimino la ROW (Prima elimino i Figli e dopo il Padre)
+
+			const { error: error1 } = await client
+				.from('Outfit_Articoli')
+				.delete()
+				.eq('IdOutfit', outfit.IdOutfit);
+
+			if (error1) {
+				console.error(error1);
+				mostraToast("Errore nella creazione del Outfit_Articoli", "error");
+				return;
+			}
+
+			const { error } = await client
+				.from('Outfit')
+				.delete()
+				.eq('IdOutfit', outfit.IdOutfit);
+
+			if (error) {
+				console.error(error);
+				mostraToast("Errore nella creazione del Outfit", "error");
+				return;
+			}				
+
+			alert("Outfit Eliminato con successo!");
+			
+			visualizzaDiv("Outfit");
+			visualizzaOutfit(true);
+		});
+
+		i++;
+	});
 }
 
-function creaOutfit(arrayId) {
+window.creaOutfit = async function (arrayId) {
 
 	if (arrayId.length < 2) {
 		alert("Attenzione! Seleziona Più di 2 articoli");
 		return;
 	}
 
-	//Salvo Id dei vari articoli 
-	const tx = db.transaction("outfit", "readwrite");
-	const store = tx.objectStore("outfit");
+	//Creo Outfit Row
+	const { data, error } = await client
+		.from('Outfit')
+		.insert([{
+			Titolo: TitoloOutfit,
+			DataUtilizzo: DataOutfit
+		}])
+		.select() //ritorna la riga creata
+		.single() //ne ho creato solo 1
 
-	store.add({
-		IdArticoli: [...arrayId]
-	});
+	if (error) {
+		console.error(error);
+		mostraToast("Errore nella creazione del outfit", "error");
+		return;
+	}
 
-	tx.oncomplete = () => {
-		mostraOutfit();		
-	};
+	//No foreach perche ho un Async
+	for (let item of arrayId) {
+		const { data: outfitArticoliTable, error } = await client
+			.from('Outfit_Articoli')
+			.insert([{
+				IdOutfit: data.IdOutfit,
+				IdArticolo: item
+			}]);
 
+		if (error) {
+			console.error(error);
+			mostraToast("Errore nella creazione del Outfit_Articoli", "error");
+			return;
+		}
+	}
+	
+
+	//svuota l'array
+	arrayId.length = 0;
+
+	visualizzaDiv("Outfit");
+	
+	visualizzaOutfit(true);
+	
 	alert("Outfit Creato con successo!" + arrayId);
 }
 
-function mostraOutfit() {
-	let i = 0;
+window.salvaModificheOutfit = async function (arrayId) {
 
-	//Titolo
-	document.getElementById("title").textContent = "Outfit creati";
-	document.getElementById("sottoTitolo").textContent = "";
+	if (arrayId.length < 2) {
+		alert("Attenzione! Seleziona Più di 2 articoli");
+		return;
+	}
 
-	//Mostro / Nascondo DIV
-	document.getElementById("DivDettagliArticolo").style.display = "none";
-	document.getElementById("mieiOutfit").style.display = "block";
-	document.getElementById("mieiArticoli").style.display = "none"
-	document.getElementById("mieiArticoli").innerHTML = "";
-	document.getElementById("search").style.display = "none";
-	document.getElementById("btnCreaOutfit").style.display = "none";
+	//Salvo Id dei vari articoli
+	await client
+		.from('Outfit')
+		.update({
+			IdArticoli: arrayId
+		})
+		.eq('IdOutfit', idOutfit)
 
-	const lista = document.getElementById("mieiOutfit");
-	lista.innerHTML = "";
+	alert("Outfit Modificato con successo!");
 
-	const tx = db.transaction(["outfit", "vestiti"], "readonly");
-	const storeOutfit = tx.objectStore("outfit");
-	const storeArticolo = tx.objectStore("vestiti");
-
-	//Passa tutti i vestiti e li mostra
-	storeOutfit.openCursor().onsuccess = function (e) {
-		const cursor = e.target.result;
-		if (!cursor) {
-			//Quando ha finito il giro
-			if (i == 0) {
-				//Vuoto
-				document.getElementById("sottoTitolo").textContent = "Nessun outfit creato";
-			}
-			return;
-		}
-		const item = cursor.value;
-		i++;
-
-		//Div Che contiene gli Outfit
-		const divGruppo = document.createElement("div");
-		divGruppo.className = "row d-flex aling-item-center justify-content-center";
-		divGruppo.innerHTML = `								
-								<span class="dynamic-text">Outfit N ${i}</span>	
-							`;		
-
-		//salvo gli Id degli articoli per abbianre l'outfit
-		let idArticoli = Array.isArray(item.IdArticoli)
-			? item.IdArticoli
-			: String(item.IdArticoli).split(",");
-
-		idArticoli.forEach(id => {
-
-			console.log("id songolo --> " + id);
-
-			//Ottengo le riga con lo stesso ID
-			const req = storeArticolo.get(Number(id));
-
-			req.onsuccess = () => {
-				const articolo = req.result;
-				if (!articolo) return;
-
-				const div = document.createElement("div");
-				div.className = "col-6 col-md-2 d-flex flex-column p-2";
-				div.innerHTML = `
-									<img src="${articolo.Immagine}" class="rounded-2 " style="height:100px">	
-									<div class="d-flex flex-column rounded-2 p-2" style="background-color:white">
-										<span class="dynamic-text fw-bold">${articolo.Titolo}</span>
-										<span class="dynamic-text">${articolo.Colore}</span>
-										<span class="dynamic-text">${articolo.Categoria}</span>
-									</div>
-								`;
-				divGruppo.appendChild(div);
-			};
-		});
-
-		lista.appendChild(divGruppo);
-		cursor.continue();
-	};
+	visualizzaDiv("Outfit");
+	visualizzaOutfit(true);
 }
 
-//289
+window.divDatiOutfit = function () {
+
+	let div = document.createElement("div")
+	div.className = "row";
+	div.innerHTML = `
+					<div class="col-2 d-flex align-items-center justify-content-start flex-row p-2">
+						<span class="dynamic-text fw-bold" style="width: 45px;">Data</span>
+						<input type="date" id="Titolo" class="dynamic-text form-control">
+					</div>
+					<div class="col-5 d-flex align-items-center justify-content-start flex-row p-2">
+						<span class="dynamic-text fw-bold" style="width: 110px;">Titolo Outfit</span>
+						<input type="text" id="Titolo" class="dynamic-text form-control">
+					</div>					
+				`;
+
+	return div;
+
+}
+	
+//--------------------------------------------------------------------------------------- FUNZIONI VARIE
+window.visualizzaDiv = function(tipoS) {
+
+	switch (tipoS) {
+		case "MioArmadio":
+
+			//Titolo
+			document.getElementById("title").textContent = "Miei articoli";
+			document.getElementById("sottoTitolo").textContent = "";
+
+			//Mostro / Nascondo DIV
+			document.getElementById("DivDettagliArticolo").style.display = "none";
+			document.getElementById("mieiOutfit").style.display = "none";
+			document.getElementById("mieiOutfit").innerHTML = "";
+			document.getElementById("mieiArticoli").style.display = "block";
+			document.getElementById("btnCreaOutfit").style.display = "none";
+			document.getElementById("btnArticoliPreferiti").style.display = "block";
+			document.getElementById("divFiltri").classList.remove("d-none");
+			document.getElementById("divFiltroCerca").classList.remove("d-none");
+
+			break;
+		case "ModificaArticolo":
+
+			document.getElementById("btnModificaArticolo").disabled = true;
+			document.getElementById("btnSalvaModificheArticolo").disabled = false;
+
+			break;
+		case "AggiungiArticolo":
+
+			//Titolo
+			document.getElementById("title").textContent = "Aggiungi nuovo articolo";
+			document.getElementById("sottoTitolo").textContent = "";
+
+			//Mostro / Nascondo DIV
+			document.getElementById("DivDettagliArticolo").style.display = "block";
+			document.getElementById("mieiOutfit").style.display = "none";
+			document.getElementById("mieiOutfit").innerHTML = "";
+			document.getElementById("mieiArticoli").style.display = "none";
+			document.getElementById("mieiArticoli").innerHTML = "";
+			document.getElementById("sottoTitolo").style.display = "none";
+			document.getElementById("divModificaArticolo").style.display = "none";
+			document.getElementById("divNuovoArticolo").style.display = "block";
+			document.getElementById("btnCreaOutfit").style.display = "none";
+			document.getElementById("btnArticoliPreferiti").style.display = "none";
+			document.getElementById("divFiltri").classList.add("d-none");
+			document.getElementById("divFiltroCerca").classList.add("d-none");
+			break;
+		case "ArticoliSelezionabili":
+			//Titolo
+			document.getElementById("title").textContent = "Seleziona piu articoli";
+			document.getElementById("sottoTitolo").textContent = "";
+
+			//Mostro / Nascondo DIV
+			document.getElementById("DivDettagliArticolo").style.display = "none";
+			document.getElementById("mieiOutfit").style.display = "none";
+			document.getElementById("mieiOutfit").innerHTML = "";
+			document.getElementById("mieiArticoli").style.display = "block";
+			document.getElementById("btnArticoliPreferiti").style.display = "none";
+			document.getElementById("divFiltri").classList.add("d-none");
+			document.getElementById("divFiltroCerca").classList.add("d-none");
+			document.getElementById("btnCreaOutfit").style.display = "block";
+			document.getElementById("btnModificaOutfit").style.display = "none";
+			break;
+		case "Outfit":
+			//Titolo
+			document.getElementById("title").textContent = "Outfit creati";
+			document.getElementById("sottoTitolo").textContent = "";
+
+			//Mostro / Nascondo DIV
+			document.getElementById("DivDettagliArticolo").style.display = "none";
+			document.getElementById("mieiOutfit").style.display = "block";
+			document.getElementById("mieiArticoli").style.display = "none"
+			document.getElementById("mieiArticoli").innerHTML = "";
+			document.getElementById("btnCreaOutfit").style.display = "none";
+			document.getElementById("btnArticoliPreferiti").style.display = "none";
+			document.getElementById("divFiltri").classList.add("d-none");
+			document.getElementById("divFiltroCerca").classList.add("d-none");
+
+			break;
+		case "ArticoliPreferiti":
+			document.getElementById("btnArticoliPreferiti").style.display = "none";
+			document.getElementById("divFiltri").classList.add("d-none");
+			document.getElementById("divFiltroCerca").classList.add("d-none");
+			break;
+		case "VisualizzaArticolo":
+
+			//Titolo
+			document.getElementById("title").textContent = "";
+			document.getElementById("sottoTitolo").textContent = "";
+
+			//Mostro / Nascondo DIV
+			document.getElementById("DivDettagliArticolo").style.display = "block";
+			document.getElementById("mieiOutfit").style.display = "none";
+			document.getElementById("mieiOutfit").innerHTML = "";
+			document.getElementById("mieiArticoli").style.display = "none";
+			document.getElementById("mieiArticoli").innerHTML = "";
+			document.getElementById("sottoTitolo").style.display = "none";
+			document.getElementById("divModificaArticolo").style.display = "block";
+			document.getElementById("divNuovoArticolo").style.display = "none";
+			document.getElementById("btnCreaOutfit").style.display = "none";
+			document.getElementById("btnArticoliPreferiti").style.display = "none";
+			document.getElementById("divFiltri").classList.add("d-none");
+			document.getElementById("divFiltroCerca").classList.add("d-none");
+			break;
+		case "ModificaArticoliSelezionabili":
+			//Titolo
+			document.getElementById("title").textContent = "Seleziona piu articoli";
+			document.getElementById("sottoTitolo").textContent = "";
+
+			//Mostro / Nascondo DIV
+			document.getElementById("DivDettagliArticolo").style.display = "none";
+			document.getElementById("mieiOutfit").style.display = "none";
+			document.getElementById("mieiOutfit").innerHTML = "";
+			document.getElementById("mieiArticoli").style.display = "block";
+			document.getElementById("btnArticoliPreferiti").style.display = "none";
+			document.getElementById("divFiltri").classList.add("d-none");
+			document.getElementById("divFiltroCerca").classList.add("d-none");
+			document.getElementById("btnCreaOutfit").style.display = "none";
+			document.getElementById("btnModificaOutfit").style.display = "block";
+
+			break;
+	}
+}
+
+window.popolaSelect = function (idSelect, defaultOption, array) {
+
+	let select = document.getElementById(idSelect);
+	select.innerHTML = "";
+
+	array.forEach(item => {
+		let option = document.createElement("option");
+
+		option.value = item;
+		option.textContent = item;
+
+		//Default
+		if (defaultOption === item) {
+			option.selected = true;
+			option.disabled = true;
+		}
+
+		select.appendChild(option);
+	});
+}
+
+window.mostraToast = function (messaggio, tipo = "success") {
+	const toastEl = document.getElementById("liveToast");
+	const toastBody = document.getElementById("toastMessage");
+
+	toastBody.textContent = messaggio;
+
+	// cambia colore (success, danger, warning, info)
+	toastEl.className = "toast align-items-center text-bg-" + tipo + " border-0";
+
+	const toast = new bootstrap.Toast(toastEl);
+	toast.show();
+}
+
+window.login = async function () {
+	const email = document.getElementById("email").value;
+	const password = document.getElementById("password").value;
+
+	const { error } = await client.auth.signInWithPassword({
+		email,
+		password
+	});
+
+	if (error) {
+		alert("Errore login");
+		return;
+	}
+
+	document.getElementById("loginDiv").style.display = "none";
+
+	// fai partire app
+	visualizzaDiv("Outfit");
+	visualizzaOutfit(false);
+}
+
+//675
