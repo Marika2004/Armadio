@@ -1,46 +1,124 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Il mio Armadio</title>
-	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Il mio Armadio</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="Funzioni.js"></script>
 
-	<!-- Gestisce il popola tabella -->
-	<script src="Funzioni.js" defer></script>
+    <style>
+        html, body {
+            margin: 0;
+            height: 100vh;
+            width: 100%;
+            overflow-x: hidden;
+            background: linear-gradient(to top, #ddffdd 0%, #eeffee 100%);
+            font-family: 'Roboto', sans-serif;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
 
-	<style>
-		html, body {
-			margin: 0;
-			height: 100vh;
-			width: 100%;
-			overflow-x: hidden;
-			background: linear-gradient(to top, #ddffdd 0%, #eeffee 100%);
-			font-family: 'Roboto', sans-serif;
-			text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
-		}
+        /*
+            Inizio Caricamento
+        */
+        /* Overlay a schermo intero */
+        #pageOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: wait; /* cursore “rotella” */
+        }
 
-		.dynamic-text {
-			font-size: clamp(10px, 1vw, 15px); /* Minimo 16px, preferito 5vw, massimo 40px */
-		}
+        /* Testo "Caricamento" con effetto pulsazione */
+        .loading-text {
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            color: #fff;
+            animation: textPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes textPulse {
+            0%, 100% {
+                opacity: 0.6;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+        }
+
+        /* Indicatore di fase */
+        .phase {
+            display: flex;
+            gap: 10px;
+        }
+
+            .phase div {
+                width: 18px;
+                height: 18px;
+                background: linear-gradient(45deg, #006633, #00cc66, #009944);
+                border-radius: 50%;
+                animation: dotPulse 1.5s ease-in-out infinite;
+            }
+
+                .phase div:nth-child(2) {
+                    animation-delay: 0.2s;
+                }
+
+                .phase div:nth-child(3) {
+                    animation-delay: 0.4s;
+                }
+
+        @keyframes dotPulse {
+            0%, 100% {
+                opacity: 0.5;
+                transform: scale(0.8);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.3);
+            }
+        }
+        /*
+            Fine Caricamento
+        */
+
+        .dynamic-text {
+            font-size: clamp(10px, 1vw, 15px); /* Minimo 16px, preferito 5vw, massimo 40px */
+        }
 
         .dynamic-btn {
             font-size: clamp(13px, 1vw, 15px);
             transition: filter 0.2s ease-in-out;
             border-radius: 16px;
         }
+
             .dynamic-btn:hover,
             .dynamic-btn:active {
                 filter: brightness(87%);
                 transition: transform 0.3s ease, filter 0.3s ease; /* Aggiunge una transizione fluida */
             }
 
-		body {
-			overflow-x: hidden;
-		}
+        body {
+            overflow-x: hidden;
+        }
 
-		/* colora il cuore di rosso */
+        /* colora il cuore di rosso */
         input:checked + .cuore {
             color: red;
         }
@@ -50,260 +128,376 @@
             cursor: pointer;
             transition: color 0.2s;
         }
-	</style>
+    </style>
 </head>
-
 <body>
-	<!-- BTN principali -->
-	<header>
-		<div class="row m-2">
-			<div class="col-6">
-				<button class="btn dynamic-btn btn-success p-2" data-bs-toggle="offcanvas" data-bs-target="#sidebar">
-					☰ Menu
-				</button>
-			</div>
+    <!-- BTN principali  -->
+    <header>
+        <!-- NVBAR  -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark p-2">
+            <div class="row container-fluid">
+                <!--  SINISTRA: Menù  -->
+                <div class="col-12 col-md-1 d-flex align-items-center justify-content-md-start justify-content-center gap-2">
+                    <button class="btn dynamic-btn btn-success p-2" data-bs-toggle="offcanvas" data-bs-target="#sidebar">
+                        ☰ Menu
+                    </button>
+                </div>
 
-			<div class="col-6 d-flex aling-item-center justify-content-end">
-				<button id="btnCreaOutfit" class="btn dynamic-btn btn-success text-start" style="display:none">Crea outfit</button>
-			</div>
-		</div>
-	</header>
+                <!--  CENTRO: Filtri  -->
+                <div id="divFiltri" class="col-12 col-md-7 d-flex align-items-center justify-content-center gap-2 d-none">
 
-	<main>
-		<!-- Sidebar -->
-		<div class="offcanvas offcanvas-start bg-dark" tabindex="-1" id="sidebar">
-			<div class="offcanvas-header">
-				<h5 class="offcanvas-title text-white">Menu</h5>
-				<button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-			</div>
+                    <select id="CategoriaFiltro" class="form-select form-select-sm">
+                    </select>
 
-			<div class="offcanvas-body">
-				<button id="btnMioArmadio" class="btn dynamic-btn btn-outline-light w-100 text-start p-2 mb-2" data-bs-dismiss="offcanvas">📦 Mio armadio</button>
-				<button id="btnVisualizzaOutfit" class="btn dynamic-btn btn-outline-light w-100 text-start p-2 mb-2" data-bs-dismiss="offcanvas">📋 Outfit</button>
-				<button id="btnAggiungiArticolo" class="btn dynamic-btn btn-outline-light w-100 text-start p-2 mb-2" data-bs-dismiss="offcanvas">➕ Aggiungi articolo</button>
-				<button id="btnNuovoOutfit" class="btn dynamic-btn btn-outline-light w-100 text-start p-2 mb-2" data-bs-dismiss="offcanvas">👕 Nuovo outfit</button>
-				<button id="btnExportJson" class="btn dynamic-btn btn-outline-light w-100 text-start p-2 mb-2" data-bs-dismiss="offcanvas" onclick="exportJson()">📤 Export Json</button>
-				<button id="btnImportJson" class="btn dynamic-btn btn-outline-light w-100 text-start p-2 mb-2" data-bs-dismiss="offcanvas" onclick="exportJson()">📥 Import Json</button>
-				<button id="btnEliminaDB" class="btn dynamic-btn btn-outline-light w-100 text-start p-2 mb-2" data-bs-dismiss="offcanvas" onclick="eliminaDB()">🗑️ Elimina DB</button>
-			</div>
+                    <select id="TipoFiltro" class="form-select form-select-sm">
+                    </select>
 
-			<div class="dropdown">
-				<a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
-					<img src="https://github.com/mdo.png" alt="" width="32" height="32" class="rounded-circle me-2">
-					<strong>mdo</strong>
-				</a>
-				<ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
-					<li><a class="dropdown-item" href="#">Profile</a></li>
-					<li><a class="dropdown-item" href="#">Sign out</a></li>
-				</ul>
-			</div>
-		</div>
+                    <select id="ColoreFiltro" class="form-select form-select-sm">
+                    </select>
 
-		<!-- TITLE -->
-		<div class="d-flex flex-column aling-item-center justify-content-center m-4">			
-			<h5 id="title" class="fw-bold"></h5>
-			<input type="text" id="search" class="form-control" placeholder="🔍 Cerca articolo...">
-			<span id="sottoTitolo" class="dynamic-text"></span>
-		</div>
+                    <select id="StagioneFiltro" class="form-select form-select-sm">
+                    </select>
+                </div>
+                <div id="divFiltroCerca" class="col-12 col-md-3 d-flex align-items-center justify-content-center gap-2 d-none">
 
-		<!-- NUOVO / DETAGLI Articolo -->
-		<div id="DivDettagliArticolo" style="display:none">			
-			<div class="row m-2">
+                    <input id="filterTitle" type="text" class="dynamic-text form-control-sm" placeholder="titolo...">
 
-				<div class="col-12 col-md-5">
-					<div id="divNuovoArticolo" style="display: none">
-						<span class="dynamic-text fw-bold" style="width: auto;">Foto</span>
-						<input type="file" id="Foto" class="dynamic-text form-control">
-						<button id="btnNuovoArticolo" class="btn dynamic-btn btn-success mt-2">Aggiungi</button>
-					</div>
-					<div id="divModificaArticolo" style="display: none">
-						<img id="Immagine" class="rounded-2 " style="height:100px;">
-						<div class="mt-2">
-							<button id="btnModificaArticolo" class="btn dynamic-btn btn-success me-2">Modifica</button>
-							<button id="btnSalvaModificheArticolo" class="btn dynamic-btn btn-success me-2">Salva modifica</button>
-							<button id="btnEliminaArticolo" class="btn dynamic-btn btn-success">Elimina</button>
-						</div>						
-					</div>
-				</div>
+                    <button class="btn btn-outline-light btn-sm" id="resetFiltri">
+                        Reset
+                    </button>
+                </div>
 
-				<div class="col-12 col-md-7">
-					<!-- Obbligatorio -->
-					<div>
-						<span class="dynamic-text fw-bold" style="width: auto;">Titolo</span>
-						<input type="text" id="Titolo" class="dynamic-text form-control">
-					</div>
-										
-					<div>
-						<span class="dynamic-text fw-bold" style="width: auto;">Categoria</span>
-						<select id="Categoria" class="form-select dynamic-text text-start">
-							<option value="Top">Top</option>
-							<option value="Bottom">Bottom</option>
-							<option value="Scarpe">Scarpe</option>
-							<option value="Outerwear">Outerwear</option>
-							<option value="Accessori">Accessori</option>
-						</select>
-					</div>
+                <!--  DESTRA: BTN -->
+                <div class="col-12 col-md-1 d-flex align-items-center justify-content-md-end justify-content-center gap-2">
 
-					<div>
-						<span class="dynamic-text fw-bold" style="width: auto;">Tipo</span>
-						<select id="Tipo" class="form-select dynamic-text text-start">
-							<!-- TOP -->
-							<option value="T-shirt">T-shirt</option>
-							<option value="Camicia">Camicia</option>
-							<option value="Felpa">Felpa</option>
-							<option value="Maglione">Maglione</option>
-							<option value="Polo">Polo</option>
+                    <button id="btnCreaOutfit" class="btn dynamic-btn btn-success p-2" style="display:none">➕ Crea outfit</button>
+                    <button id="btnModificaOutfit" class="btn dynamic-btn btn-success p-2" style="display:none">➕ Modifica outfit</button>
+                    <button id="btnArticoliPreferiti" class="btn dynamic-btn btn-success p-2" style="display:none">❤️ Preferiti</button>
+                </div>
+            </div>
+        </nav>
+    </header>
 
-							<!-- BOTTOM -->
-							<option value="Jeans">Jeans</option>
-							<option value="Pantaloni">Pantaloni</option>
-							<option value="Pantaloni eleganti">Pantaloni eleganti</option>
-							<option value="Shorts">Shorts</option>
-							<option value="Gonna">Gonna</option>
+    <!--  Alert di bootrap-->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+        <div id="liveToast" class="toast align-items-center text-bg-success border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body" id="toastMessage">
+                    Messaggio
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
 
-							<!-- SCARPE -->
-							<option value="Sneakers">Sneakers</option>
-							<option value="Stivali">Stivali</option>
-							<option value="Scarpe eleganti">Scarpe eleganti</option>
-							<option value="Sandali">Sandali</option>
+    <!-- Login -->
+    <div id="loginDiv" style="padding:20px">
+        <input id="email" placeholder="email">
+        <input id="password" type="password" placeholder="password">
+        <button onclick="login()">Login</button>
+    </div>
 
-							<!-- OUTERWEAR -->
-							<option value="Giacca">Giacca</option>
-							<option value="Cappotto">Cappotto</option>
-							<option value="Giubbotto">Giubbotto</option>
-						</select>
-					</div>
 
-					<div>
-						<span class="dynamic-text fw-bold" style="width: auto;">Colore</span>
-						<select id="Colore" class="form-select dynamic-text text-start">
-							<option value="Nero">Nero</option>
-							<option value="Bianco">Bianco</option>
-							<option value="Grigio">Grigio</option>
-							<option value="Beige">Beige</option>
-							<option value="Marrone">Marrone</option>
-							<option value="Blu">Blu</option>
-							<option value="Azzurro">Azzurro</option>
-							<option value="Verde">Verde</option>
-							<option value="Rosso">Rosso</option>
-							<option value="Bordeaux">Bordeaux</option>
-							<option value="Giallo">Giallo</option>
-							<option value="Arancione">Arancione</option>
-							<option value="Rosa">Rosa</option>
-							<option value="Viola">Viola</option>
-							<option value="Multicolore">Multicolore</option>
-						</select>
-					</div>
+    <main>
 
-					<div>
-						<span class="dynamic-text fw-bold" style="width: auto;">Stagione</span>
-						<select id="Stagione" class="form-select dynamic-text text-start">
-							<option value="Estate">Estate</option>
-							<option value="Inverno">Inverno</option>
-							<option value="MezzaStagione">Mezza stagione</option>
-						</select>
-					</div>				
-				</div>
-			</div>
-		</div>
+        <div id="pageOverlay" style="display: none;">
+            <!--  Pagina non iteragibile-->
+            <div class="loading-text">Caricamento...</div>
+            <div class="phase">
+                <div></div><div></div><div></div>
+            </div>
+        </div>
+        <!--  Sidebar-->
+        <div class="offcanvas offcanvas-start bg-dark" tabindex="-1" id="sidebar">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title text-white">Menu</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+            </div>
 
-		<!-- MOSTRO Outfit -->
-		<div id="mieiOutfit" class="row d-flex aling-item-center justify-content-center m-2 p-2"></div>
+            <div class="offcanvas-body">
+                <button id="btnMioArmadio" class="btn dynamic-btn btn-outline-light w-100 text-start p-2 mb-2" data-bs-dismiss="offcanvas">📦 Mio armadio</button>
+                <button id="btnVisualizzaOutfit" class="btn dynamic-btn btn-outline-light w-100 text-start p-2 mb-2" data-bs-dismiss="offcanvas">📋 Outfit</button>
+                <button id="btnAggiungiArticolo" class="btn dynamic-btn btn-outline-light w-100 text-start p-2 mb-2" data-bs-dismiss="offcanvas">➕ Aggiungi articolo</button>
+                <button id="btnNuovoOutfit" class="btn dynamic-btn btn-outline-light w-100 text-start p-2 mb-2" data-bs-dismiss="offcanvas">👕 Nuovo outfit</button>
+            </div>
 
-		<!-- MOSTRO Articoli -->
-		<div id="mieiArticoli" class="row d-flex aling-item-center justify-content-center m-2 p-2"></div>
-</main>
+            <div class="dropdown">
+                <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+                    <img src="https://github.com/mdo.png" alt="" width="32" height="32" class="rounded-circle me-2">
+                    <strong>mdo</strong>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
+                    <li><a class="dropdown-item" href="#">Profile</a></li>
+                    <li><a class="dropdown-item" href="#">Sign out</a></li>
+                </ul>
+            </div>
+        </div>
+        <!--  TITLE-->
+        <div class="d-flex flex-column aling-item-center justify-content-center m-4">
+            <h5 id="title" class="fw-bold"></h5>
+            <span id="sottoTitolo" class="dynamic-text"></span>
+        </div>
+        <!--   NUOVO / DETAGLI Articolo-->
+        <div id="DivDettagliArticolo" style="display:none">
+            <div class="row m-2">
 
-	<script>
-		let db;
+                <div class="col-12 col-md-5">
+                    <div id="divNuovoArticolo" style="display: none">
+                        <span class="dynamic-text fw-bold" style="width: auto;">Foto</span>
+                        <input type="file" id="Foto" class="dynamic-text form-control">
+                        <button id="btnNuovoArticolo" class="btn dynamic-btn btn-success mt-2">Aggiungi</button>
+                    </div>
+                    <div id="divModificaArticolo" style="display: none">
+                        <img id="Immagine" class="rounded-2 " style="height:200px;">
+                        <div class="mt-2">
+                            <button id="btnModificaArticolo" class="btn dynamic-btn btn-success me-2">Modifica</button>
+                            <button id="btnSalvaModificheArticolo" class="btn dynamic-btn btn-success me-2">Salva modifica</button>
+                            <button id="btnEliminaArticolo" class="btn dynamic-btn btn-success">Elimina</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-7">
+                    <!--  Obbligatorio-->
+                    <div>
+                        <span class="dynamic-text fw-bold" style="width: auto;">Titolo</span>
+                        <input type="text" id="Titolo" class="dynamic-text form-control">
+                    </div>
+
+                    <div>
+                        <span class="dynamic-text fw-bold" style="width: auto;">Categoria</span>
+                        <select id="Categoria" class="form-select dynamic-text text-start">
+                        </select>
+                    </div>
+
+                    <div>
+                        <span class="dynamic-text fw-bold" style="width: auto;">Tipo</span>
+                        <select id="Tipo" class="form-select dynamic-text text-start">
+                        </select>
+                    </div>
+
+                    <div>
+                        <span class="dynamic-text fw-bold" style="width: auto;">Colore</span>
+                        <select id="Colore" class="form-select dynamic-text text-start">
+                        </select>
+                    </div>
+
+                    <div>
+                        <span class="dynamic-text fw-bold" style="width: auto;">Stagione</span>
+                        <select id="Stagione" class="form-select dynamic-text text-start">
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--  MOSTRO Outfit-->
+        <div id="mieiOutfit" class="row d-flex aling-item-center justify-content-center m-2 p-2"></div>
+        <!--  MOSTRO Articoli-->
+        <div id="mieiArticoli" class="row d-flex aling-item-center justify-content-center m-2 p-2">
+        </div>
+    </main>
+
+    <script>
         let idArticolo;
+        let idOutfit;
         let arrayId = [];
+        let TitoloOutfit = "";
+        let DataOutfit = "";
+        let categoriaValue = "";
+        let tipoValue = "";
+        let coloreValue = "";
+        let stagioneValue = "";
+        let categoria = ["Categoria", "Top", "Bottom", "Scarpe", "Outerwear", "Accessori"];
+        let tipo = ["Tipo", /* TOP */ "T-shirt", "Camicia", "Felpa", "Maglione", "Polo", /* BOTTOM */ "Jeans", "Pantaloni", "Pantaloni eleganti", "Shorts", "Gonna",
+                                    /* SCARPE */ "Sneakers", "Stivali", "Scarpe", "Sandali", /* OUTERWEAR */ "Giacca", "Cappotto", "Giubbotto"];
+        let colore = ["Colore", "Nero", "Bianco", "Grigio", "Beige", "Marrone", "Blu", "Azzurro", "Verde", "Rosso", "Bordeaux", "Giallo", "Arancione", "Rosa", "Viola", "Multicolore"];
+        let stagione = ["Stagione", "Estate", "Inverno", "Mezza Stagione"];
 
-        //--------------------------------------------------------------------------------------- CREO DB & TABELLE
-		//Creo DB
-		const request = indexedDB.open("ArmadioDB", 2);
+        //--------------------------------------------------------------------------------------- DATI DEFAULT INIZIALI
 
-		//Creo Tabelle
-		request.onupgradeneeded = function (e) {
-			db = e.target.result;
-
-            //Creo Tabella "vestiti"
-            if (!db.objectStoreNames.contains("vestiti")) {
-                db.createObjectStore("vestiti", { keyPath: "id", autoIncrement: true });
+        // chiamata al DB
+        const client = supabase.createClient(
+            'https://scutvzratunegnqrnmkc.supabase.co',
+            'sb_publishable_4swbXQMuEvUMfnXEvNUaTw_58HTnde1',
+            {
+                auth: {
+                    persistSession: false
+                }
             }
+        )
 
-            //Creo Tabella "outfit"
-            if (!db.objectStoreNames.contains("outfit")) {
-                db.createObjectStore("outfit", { keyPath: "id", autoIncrement: true });
-            }
-        };
+        //--------------------------------------------------------------------------------------- DATI INIZIALI   
 
-		//Una volta creata la Tabella carico i DATI
-		request.onsuccess = function (e) {
-			db = e.target.result;
+       visualizzaDiv("Outfit");
+       visualizzaOutfit(false);
 
-            //--------------------------------------------------------------------------------------- DATI INIZIALI
-            mostraOutfit();
-		};
+        /*
+                                                Articolo
+        */
 
-        //--------------------------------------------------------------------------------------- BTN VISUALIZZA IL MIO ARMADIO
-		document.getElementById("btnMioArmadio").addEventListener("click", function () {
-            mostraArticoli();
-		});        
+        //--------------------------------------------------------------------------------------- BTN AGGIUNGI ARTICOLO NUOVO
+        document.getElementById("btnAggiungiArticolo").addEventListener("click", function () {
+
+            visualizzaDiv("AggiungiArticolo");
+            aggiungiArticolo();
+
+            //Popola Select --> IdSelect , DefaultValue, array
+            popolaSelect("Categoria", "Categoria", categoria);
+            popolaSelect("Tipo", "Tipo", tipo);
+            popolaSelect("Colore", "Colore", colore);
+            popolaSelect("Stagione", "Stagione", stagione);
+        });
 
         //--------------------------------------------------------------------------------------- BTN SALVA ARTICOLO NUOVO
         document.getElementById("btnNuovoArticolo").addEventListener("click", function () {
             salvaNuovoArticolo();
-        });         
-
-		//--------------------------------------------------------------------------------------- BTN AGGIUNGI ARTICOLO NUOVO
-		document.getElementById("btnAggiungiArticolo").addEventListener("click", function () {
-			aggiungiArticolo();
-		});
-
-        //--------------------------------------------------------------------------------------- BTN SELEZIONA N° ARTICOLI
-        document.getElementById("btnNuovoOutfit").addEventListener("click", function () {
-			mostraArticoliCliccabili();
         });
-        
-        //--------------------------------------------------------------------------------------- BTN CREA OUTFIT NUOVO
-        document.getElementById("btnCreaOutfit").addEventListener("click", function () {
-            creaOutfit(arrayId);
-		});
 
         //--------------------------------------------------------------------------------------- BTN MODIFICO ARTICOLO
-		document.getElementById("btnModificaArticolo").addEventListener("click", function () {
-			modificaArticolo();
-		});
+        document.getElementById("btnModificaArticolo").addEventListener("click", function () {
+            visualizzaDiv("ModificaArticolo");
+            modificaArticolo();
+        });
 
         //--------------------------------------------------------------------------------------- BTN MODIFICO ARTICOLO
         document.getElementById("btnSalvaModificheArticolo").addEventListener("click", function () {
-			salvaModificheArticolo();
+            salvaModificheArticolo("BtnSalva");
         });
-        
+
 
         //--------------------------------------------------------------------------------------- BTN ELIMINO ARTICOLO
-		document.getElementById("btnEliminaArticolo").addEventListener("click", function () {
-			eliminaArticolo();
-		});
+        document.getElementById("btnEliminaArticolo").addEventListener("click", function () {
+            eliminaArticolo();
+        });
+
+        //--------------------------------------------------------------------------------------- BTN ARTICOLI PREFERITI
+        document.getElementById("btnArticoliPreferiti").addEventListener("click", function () {
+
+            visualizzaDiv("ArticoliPreferiti");
+            visualizzaArticoli("mieiArticoli", "Articoli", "ArticoliPreferiti");
+        });
+
+        //--------------------------------------------------------------------------------------- FILTRI
+        document.getElementById("CategoriaFiltro").addEventListener("change", function () {
+
+            categoriaValue = document.getElementById("CategoriaFiltro").value;
+            visualizzaArticoli("mieiArticoli", "Articoli", "FiltroArticoli");
+        });
+
+        document.getElementById("TipoFiltro").addEventListener("change", function () {
+
+            tipoValue = document.getElementById("TipoFiltro").value;
+            visualizzaArticoli("mieiArticoli", "Articoli", "FiltroArticoli");
+        });
+
+        document.getElementById("ColoreFiltro").addEventListener("change", function () {
+
+            coloreValue = document.getElementById("ColoreFiltro").value;
+            visualizzaArticoli("mieiArticoli", "Articoli", "FiltroArticoli");
+        });
+
+        document.getElementById("StagioneFiltro").addEventListener("change", function () {
+
+            stagioneValue = document.getElementById("StagioneFiltro").value;
+            visualizzaArticoli("mieiArticoli", "Articoli", "FiltroArticoli");
+        });
+
+        document.getElementById("filterTitle").addEventListener("input", function () {
+
+            //Mostro i Div che servono
+            visualizzaDiv("MioArmadio");
+
+            //Mostro solo quelli che contengono il VALUE nel Titolo
+            visualizzaArticoli("mieiArticoli", "Articoli", "FiltroTitolo");
+
+            //Popola Select --> IdSelect , DefaultValue, array
+            popolaSelect("CategoriaFiltro", "Categoria", categoria);
+            popolaSelect("TipoFiltro", "Tipo", tipo);
+            popolaSelect("ColoreFiltro", "Colore", colore);
+            popolaSelect("StagioneFiltro", "Stagione", stagione);
+        });
+
+        //--------------------------------------------------------------------------------------- RESET FILTRI
+        document.getElementById("resetFiltri").addEventListener("click", function () {
+
+            categoriaValue = "";
+            tipoValue = "";
+            coloreValue = "";
+            stagioneValue = "";
+
+            //Mostro i Div che servono
+            visualizzaDiv("MioArmadio");
+
+            //mostraArticoli();
+            visualizzaArticoli("mieiArticoli", "Articoli", "MioArmadio");
+
+            //Popola Select --> IdSelect , DefaultValue, array
+            popolaSelect("CategoriaFiltro", "Categoria", categoria);
+            popolaSelect("TipoFiltro", "Tipo", tipo);
+            popolaSelect("ColoreFiltro", "Colore", colore);
+            popolaSelect("StagioneFiltro", "Stagione", stagione);
+        });
+
+        /*
+                                                Outfit
+        */
+
+        //--------------------------------------------------------------------------------------- BTN SELEZIONA N° ARTICOLI
+        document.getElementById("btnNuovoOutfit").addEventListener("click", function () {
+
+            visualizzaDiv("ArticoliSelezionabili");
+            visualizzaArticoli("mieiArticoli", "Articoli", "ArticoliSelezionabili");
+        });
+
+        //--------------------------------------------------------------------------------------- BTN CREA OUTFIT NUOVO
+        document.getElementById("btnCreaOutfit").addEventListener("click", function () {
+            creaOutfit(arrayId);
+        });
+
+
+        //--------------------------------------------------------------------------------------- BTN SALVA MODIFCHE OUTFIT
+        document.getElementById("btnModificaOutfit").addEventListener("click", function () {
+            salvaModificheOutfit(arrayId);
+        });
 
         //--------------------------------------------------------------------------------------- BTN VISUALIZZA OUTFIT
         document.getElementById("btnVisualizzaOutfit").addEventListener("click", function () {
-            mostraOutfit();
+
+            visualizzaDiv("Outfit");
+            visualizzaOutfit(true);
+        });
+
+        /*
+                                                Altro
+        */
+
+        //--------------------------------------------------------------------------------------- BTN VISUALIZZA IL MIO ARMADIO
+        document.getElementById("btnMioArmadio").addEventListener("click", function () {
+
+            //Mostro i Div che servono
+            visualizzaDiv("MioArmadio");
+
+            //mostraArticoli();
+            visualizzaArticoli("mieiArticoli", "Articoli", "MioArmadio");
+
+            //Popola Select --> IdSelect , DefaultValue, array
+            popolaSelect("CategoriaFiltro", "Categoria", categoria);
+            popolaSelect("TipoFiltro", "Tipo", tipo);
+            popolaSelect("ColoreFiltro", "Colore", colore);
+            popolaSelect("StagioneFiltro", "Stagione", stagione);
         });
 
 
-		/*
-			EXTRA:
-			-	Filtri: mostra solo maglie
-			-	Outfit preferiti
-			-	ridimensionare immagine prima di salvarla (es. max 300px)
-			-	Elimina / Duplica / Modifica Outfit
-			-	capi mai usati, outfit più usati
-		*/
+        /*
+            2. Ordinamento
+            3. Outfit random
+            4. N capi / piu usati , meno usati ecc
+            5. alert con messagi di bootrap
+            6.Mostro rotella di caricamento
 
+        */
+    </script>
 
-	</script>
 </body>
 </html>
-<!-- 225 -->
+<!-- 476 -->
