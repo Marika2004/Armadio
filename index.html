@@ -10,12 +10,13 @@
     <script src="Funzioni.js"></script>
 
     <style>
+
         html, body {
             margin: 0;
             height: 100vh;
             width: 100%;
             overflow-x: hidden;
-            background: linear-gradient(to top, #ddffdd 0%, #eeffee 100%);
+            background: #f1f9f4; /* Verde pastello chiaro */
             font-family: 'Roboto', sans-serif;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
         }
@@ -98,24 +99,46 @@
             Fine Caricamento
         */
 
+        .form-select {
+            font-size: clamp(13px, 1vw, 15px);
+            border-radius: 16px;
+            padding: 12px;
+            border: none;
+            background: #f1f9f4; /* Verde menta chiaro */
+            border: 2px solid #d2e6da !important;
+            /*mostro la frecceta del select*/
+            appearance: auto;
+            -webkit-appearance: auto;
+            -moz-appearance: auto;
+        }
+
         .dynamic-text {
             font-size: clamp(10px, 1vw, 15px); /* Minimo 16px, preferito 5vw, massimo 40px */
+            padding: 12px;
+            border: none;
+            border-radius: 16px;
         }
 
         .dynamic-btn {
-            font-size: clamp(13px, 1vw, 15px);
+            font-size: clamp(16px, 1.2vw, 18px);
             transition: filter 0.2s ease-in-out;
             border-radius: 16px;
+            padding: 6px 10px;
+            color: white;
+            border: none;
+            /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);*/
         }
 
             .dynamic-btn:hover,
             .dynamic-btn:active {
-                filter: brightness(87%);
-                transition: transform 0.3s ease, filter 0.3s ease; /* Aggiunge una transizione fluida */
+                transform: scale(1.05); /* Leggera espansione al passaggio del mouse */
+                transition: 0.3s ease;
+                color: white;
             }
-
-        body {
-            overflow-x: hidden;
+            
+        .navbar {
+            background: #5C8B6E; /* Verde oliva elegante */
+            margin-bottom: 20px;
         }
 
         /* colora il cuore di rosso */
@@ -123,60 +146,187 @@
             color: red;
         }
 
+        .form-control {
+            border-radius: 10px;
+        }
+        .card {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+            .card:hover {
+                box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1);
+                transform: translateY(-5px); /* Effetto di spostamento verso l'alto */
+                transition: 0.3s ease;
+            }
+
+        /* CARD */
+        .card-item {
+            background: white;
+            border-radius: 18px;
+            overflow: hidden;
+            transition: 0.25s;
+            border: 1px solid #eee;
+        }
+
+            .card-item:hover {
+                transform: translateY(-6px);
+                box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            }
+
+        /* OVERLAY */
+        /*.overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.35);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 14px;
+            opacity: 0;
+            transition: 0.3s;
+        }*/
+
+        .card-item:hover /*.overlay*/{
+            opacity: 1;
+        }
+
+        .cuore-label {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            padding: 6px;
+            color: white;
+            transition: color 0.3s ease, background-color 0.3s ease;
+        }
+
         .cuore {
             color: lightgray;
             cursor: pointer;
             transition: color 0.2s;
+            font-size: 18px;
         }
+            .cuore input[type="checkbox"] {
+                display: none;
+            }
+
+            .cuore input[type="checkbox"]:checked + .cuore {
+                color: red; /* Colore del cuore quando è selezionato */
+            }
+
+
+
+
+
+
+
+
+
+
+
+
+        /* Upload */
+        .upload-box {
+            border: 2px dashed #5C8B6E;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            background: #f8fffb;
+            transition: 0.2s;
+        }
+
+            .upload-box:hover {
+                background: #eef8f1;
+            }
+
+            .upload-box img {
+                max-width: 100%;
+                border-radius: 10px;
+                margin-top: 10px;
+            }
+
+
     </style>
 </head>
 <body>
-    <!-- BTN principali  -->
-    <header>
-        <!-- NVBAR  -->
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark p-2">
-            <div class="row container-fluid">
-                <!--  SINISTRA: Menù  -->
-                <div class="col-12 col-md-1 d-flex align-items-center justify-content-md-start justify-content-center gap-2">
-                    <button class="btn dynamic-btn btn-success p-2" data-bs-toggle="offcanvas" data-bs-target="#sidebar">
-                        ☰ Menu
-                    </button>
-                </div>
+    <!-- Login -->
+    <header id="loginDiv" class="pt-5">
+        <div class="d-flex align-items-center justify-content-center mt-5">
 
-                <!--  CENTRO: Filtri  -->
-                <div id="divFiltri" class="col-12 col-md-7 d-flex align-items-center justify-content-center gap-2 d-none">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-6 col-lg-4">
 
-                    <select id="CategoriaFiltro" class="form-select form-select-sm">
-                    </select>
+                        <div class="card shadow-lg p-4">
+                            <div class="text-center mb-4">
+                                <h3 class="fw-bold">Login</h3>
+                                <p class="text-muted">Accedi al tuo account</p>
+                            </div>
 
-                    <select id="TipoFiltro" class="form-select form-select-sm">
-                    </select>
+                            <form>
+                                <div class="mb-3">
+                                    <label class="form-label">Email</label>
+                                    <input id="email" type="email" class="form-control" placeholder="Inserisci email" required>
+                                </div>
 
-                    <select id="ColoreFiltro" class="form-select form-select-sm">
-                    </select>
+                                <div class="mb-3">
+                                    <label class="form-label">Password</label>
+                                    <input id="password" type="password" class="form-control" placeholder="Inserisci password" required>
+                                </div>
 
-                    <select id="StagioneFiltro" class="form-select form-select-sm">
-                    </select>
-                </div>
-                <div id="divFiltroCerca" class="col-12 col-md-3 d-flex align-items-center justify-content-center gap-2 d-none">
+                                <div class="d-grid">
+                                    <button id="btnLogin" class="btn dynamic-btn btn-success p-2">Accedi</button>
 
-                    <input id="filterTitle" type="text" class="dynamic-text form-control-sm" placeholder="titolo...">
+                                </div>
+                            </form>
+                        </div>
 
-                    <button class="btn btn-outline-light btn-sm" id="resetFiltri">
-                        Reset
-                    </button>
-                </div>
-
-                <!--  DESTRA: BTN -->
-                <div class="col-12 col-md-1 d-flex align-items-center justify-content-md-end justify-content-center gap-2">
-
-                    <button id="btnCreaOutfit" class="btn dynamic-btn btn-success p-2" style="display:none">➕ Crea outfit</button>
-                    <button id="btnModificaOutfit" class="btn dynamic-btn btn-success p-2" style="display:none">➕ Modifica outfit</button>
-                    <button id="btnArticoliPreferiti" class="btn dynamic-btn btn-success p-2" style="display:none">❤️ Preferiti</button>
+                    </div>
                 </div>
             </div>
-        </nav>
+        </div>
     </header>
+
+    <!-- NAVBAR -->
+    <nav id="nvbar" class="navbar px-2" style="display:none">
+        <div class="row w-100">
+            <!-- Menù -->
+            <div class="col-12 col-md-1 d-flex align-items-center gap-3">
+                <button class="btn dynamic-btn p-2" style="background: transparent" data-bs-toggle="offcanvas" data-bs-target="#sidebar"> ☰ </button>
+                <span class="dynamic-text fw-bold text-white" style="font-size: 18px;">Menù</span>
+            </div>
+            <!-- Filtri Select -->
+            <div class="col-12 col-md-6 d-flex align-items-center justify-content-center">
+                <div id="divFiltri" class="d-flex gap-2 d-none">
+
+                    <select id="CategoriaFiltro" class="form-select dynamic-text">
+                    </select>
+
+                    <select id="TipoFiltro" class="form-select dynamic-text">
+                    </select>
+
+                    <select id="ColoreFiltro" class="form-select dynamic-text">
+                    </select>
+
+                    <select id="StagioneFiltro" class="form-select dynamic-text">
+                    </select>
+                </div>
+            </div>
+            <!--Filtro Cerca + BTN-->
+            <div class="col-12 col-md-5 d-flex align-items-center justify-content-end">
+                <div id="divFiltroCerca" class="d-flex gap-2 d-none">
+                    <input id="filterTitle" type="text" class="dynamic-text" style="background: #e0f2e9;" placeholder="🔍 Cerca...">
+                    <button id="resetFiltri" class="btn dynamic-btn p-2 me-2" style="font-size: 18px; background: transparent"> Reset </button>
+                </div>
+                <button id="btnArticoliPreferiti" class="btn dynamic-btn p-2" style="font-size: 18px; background: transparent; display:none">❤️</button>
+            </div>
+        </div>
+    </nav>
 
     <!--  Alert di bootrap-->
     <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
@@ -190,111 +340,145 @@
         </div>
     </div>
 
-    <!-- Login -->
-    <div id="loginDiv" style="padding:20px">
-        <input id="email" placeholder="email">
-        <input id="password" type="password" placeholder="password">
-        <button onclick="login()">Login</button>
-    </div>
-
-
-    <main>
-
-        <div id="pageOverlay" style="display: none;">
-            <!--  Pagina non iteragibile-->
-            <div class="loading-text">Caricamento...</div>
-            <div class="phase">
-                <div></div><div></div><div></div>
-            </div>
+    <div id="pageOverlay" style="display: none;">
+        <!--  Pagina non iteragibile-->
+        <div class="loading-text">Caricamento...</div>
+        <div class="phase">
+            <div></div><div></div><div></div>
         </div>
+    </div>
+        
+    <main id="main" class="px-2" style="display:none;">
         <!--  Sidebar-->
-        <div class="offcanvas offcanvas-start bg-dark" tabindex="-1" id="sidebar">
+        <div class="offcanvas offcanvas-start" style="background: #5C8B6E; " tabindex="-1" id="sidebar">
             <div class="offcanvas-header">
                 <h5 class="offcanvas-title text-white">Menu</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
             </div>
 
             <div class="offcanvas-body">
-                <button id="btnMioArmadio" class="btn dynamic-btn btn-outline-light w-100 text-start p-2 mb-2" data-bs-dismiss="offcanvas">📦 Mio armadio</button>
-                <button id="btnVisualizzaOutfit" class="btn dynamic-btn btn-outline-light w-100 text-start p-2 mb-2" data-bs-dismiss="offcanvas">📋 Outfit</button>
-                <button id="btnAggiungiArticolo" class="btn dynamic-btn btn-outline-light w-100 text-start p-2 mb-2" data-bs-dismiss="offcanvas">➕ Aggiungi articolo</button>
-                <button id="btnNuovoOutfit" class="btn dynamic-btn btn-outline-light w-100 text-start p-2 mb-2" data-bs-dismiss="offcanvas">👕 Nuovo outfit</button>
+                <button id="btnMioArmadio" class="btn dynamic-btn  w-100 text-start p-2 mb-2" style="background: transparent" data-bs-dismiss="offcanvas">📦 Mio armadio</button>
+                <button id="btnVisualizzaOutfit" class="btn dynamic-btn w-100 text-start p-2 mb-2" style="background: transparent" data-bs-dismiss="offcanvas">📋 Outfit</button>
+                <!--<button id="btnAggiungiArticolo" class="btn dynamic-btn w-100 text-start p-2 mb-2" style="background: transparent" data-bs-dismiss="offcanvas">➕ Aggiungi articolo</button>-->
+                <!--<button id="btnNuovoOutfit" class="btn dynamic-btn w-100 text-start p-2 mb-2" style="background: transparent" data-bs-dismiss="offcanvas">👕 Nuovo outfit</button>-->
+
+                <div id="divCambiaPsw" class="d-flex align-items-center justify-content-center gap-2 d-none">
+                    <input id="newPass" type="password" class="dynamic-text form-control" placeholder="Nuova password">
+                    <button id="btnSalvaNuovaPsw" class="btn dynamic-btn btn-success p-2">Cambia password</button>
+                </div>
+
             </div>
 
             <div class="dropdown">
                 <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
-                    <img src="https://github.com/mdo.png" alt="" width="32" height="32" class="rounded-circle me-2">
-                    <strong>mdo</strong>
+                    <img src="/immagini/user.png" alt="" width="32" height="32" class="rounded-circle me-2">
+                    <strong id="spanUser"></strong>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
-                    <li><a class="dropdown-item" href="#">Profile</a></li>
-                    <li><a class="dropdown-item" href="#">Sign out</a></li>
+                    <li><a id="btnCambiaPsw" class="dropdown-item w-50">Cambia Password</a></li>
+                    <li><a class="dropdown-item" href="Index.html">Sign out</a></li>
                 </ul>
             </div>
         </div>
-        <!--  TITLE-->
-        <div class="d-flex flex-column aling-item-center justify-content-center m-4">
-            <h5 id="title" class="fw-bold"></h5>
-            <span id="sottoTitolo" class="dynamic-text"></span>
-        </div>
-        <!--   NUOVO / DETAGLI Articolo-->
-        <div id="DivDettagliArticolo" style="display:none">
-            <div class="row m-2">
 
-                <div class="col-12 col-md-5">
-                    <div id="divNuovoArticolo" style="display: none">
-                        <span class="dynamic-text fw-bold" style="width: auto;">Foto</span>
-                        <input type="file" id="Foto" class="dynamic-text form-control">
-                        <button id="btnNuovoArticolo" class="btn dynamic-btn btn-success mt-2">Aggiungi</button>
+        <!-- TITOLO + BTN -->
+        <div class="d-flex aling-item-center justify-content-between mb-3">
+            <div>
+                <h3 id="title" class="fw-bold"></h3>
+                <span id="sottoTitolo" class="dynamic-text"></span>
+            </div>
+            <div>
+                <button id="btnNuovoOutfit" class="btn dynamic-btn p-2" style="background: #5C8B6E">👕 Nuovo outfit</button>
+                <button id="btnCreaOutfit" class="btn dynamic-btn p-2" style="background: #5C8B6E;">➕ Crea outfit</button>
+                <button id="btnModificaOutfit" class="btn dynamic-btn p-2" style="background: #5C8B6E; display: none">➕ Modifica outfit</button>
+                <button id="btnAggiungiArticolo" class="btn dynamic-btn p-2" style="background: #5C8B6E;" data-bs-toggle="modal" data-bs-target="#dettagliArticoloModal"> ➕ Nuovo </button>
+            </div>
+        </div>
+
+
+        <!--   POP-UP NUOVO / DETAGLI Articolo-->
+        <div class="modal modal-xl fade" id="dettagliArticoloModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content custom-modal">
+
+                    <div class="modal-header" style="background: #5C8B6E;">
+                        <h3 id="titlePopUp" class="text-white fw-semibold"></h3>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-                    <div id="divModificaArticolo" style="display: none">
-                        <img id="Immagine" class="rounded-2 " style="height:200px;">
-                        <div class="mt-2">
-                            <button id="btnModificaArticolo" class="btn dynamic-btn btn-success me-2">Modifica</button>
-                            <button id="btnSalvaModificheArticolo" class="btn dynamic-btn btn-success me-2">Salva modifica</button>
-                            <button id="btnEliminaArticolo" class="btn dynamic-btn btn-success">Elimina</button>
+
+                    <!-- #f1f9f4; -->
+                    <div class="modal-body" style="background: white">
+                        <div class="row m-2">
+
+                            <!-- Immagine -->
+                            <div class="col-12 col-md-5">
+                                <div id="divNuovoArticolo">
+                                    <span class="dynamic-text fw-bold" style="width: auto;">Foto</span>
+                                    <div class="upload-box" onclick="document.getElementById('Foto').click()">
+                                        <p>📷 Clicca o trascina una foto</p>
+                                        <input type="file" id="Foto" hidden onchange="previewImage(event)">
+                                        <img id="preview" style="display:none;">
+                                    </div>                                    
+                                </div>                                
+                            </div>
+
+                            <!-- Campi -->
+                            <div class="col-12 col-md-7">
+                                <!--  Obbligatorio-->
+                                <div class="mb-3">
+                                    <span class="dynamic-text fw-bold" style="width: auto;">Titolo</span>
+                                    <input type="text" id="Titolo" placeholder="Titolo..." class="dynamic-text form-control" style="background: #f1f9f4; border: 2px solid #d2e6da !important; ">
+                                </div>
+
+                                <div class="mb-3">
+                                    <span class="dynamic-text fw-bold" style="width: auto;">Categoria</span>
+                                    <select id="Categoria" class="form-select dynamic-text text-start">
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <span class="dynamic-text fw-bold" style="width: auto;">Tipo</span>
+                                    <select id="Tipo" class="form-select dynamic-text text-start">
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <span class="dynamic-text fw-bold" style="width: auto;">Colore</span>
+                                    <select id="Colore" class="form-select dynamic-text text-start">
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <span class="dynamic-text fw-bold" style="width: auto;">Stagione</span>
+                                    <select id="Stagione" class="form-select dynamic-text text-start">
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="col-12 col-md-7">
-                    <!--  Obbligatorio-->
-                    <div>
-                        <span class="dynamic-text fw-bold" style="width: auto;">Titolo</span>
-                        <input type="text" id="Titolo" class="dynamic-text form-control">
+                    <!-- BTN -->
+                    <div class="modal-footer">
+                        <button id="btnNuovoArticolo" class="btn dynamic-btn mt-2" style="background: #5C8B6E;" data-bs-dismiss="modal">➕ Aggiungi</button>
+
+                        <div id="divModificaArticolo" style="display: none">
+                            <div class="d-flex gap-2 mt-2">
+                                <button id="btnModificaArticolo" class="btn dynamic-btn" style="background: #5C8B6E;">Modifica</button>
+                                <button id="btnSalvaModificheArticolo" class="btn dynamic-btn" style="background: #5C8B6E;" data-bs-dismiss="modal">Salva modifica</button>
+                                <button id="btnEliminaArticolo" class="btn dynamic-btn" style="background: #5C8B6E;" data-bs-dismiss="modal">Elimina</button>
+                            </div>
+                        </div>
+
                     </div>
 
-                    <div>
-                        <span class="dynamic-text fw-bold" style="width: auto;">Categoria</span>
-                        <select id="Categoria" class="form-select dynamic-text text-start">
-                        </select>
-                    </div>
-
-                    <div>
-                        <span class="dynamic-text fw-bold" style="width: auto;">Tipo</span>
-                        <select id="Tipo" class="form-select dynamic-text text-start">
-                        </select>
-                    </div>
-
-                    <div>
-                        <span class="dynamic-text fw-bold" style="width: auto;">Colore</span>
-                        <select id="Colore" class="form-select dynamic-text text-start">
-                        </select>
-                    </div>
-
-                    <div>
-                        <span class="dynamic-text fw-bold" style="width: auto;">Stagione</span>
-                        <select id="Stagione" class="form-select dynamic-text text-start">
-                        </select>
-                    </div>
                 </div>
             </div>
         </div>
+
         <!--  MOSTRO Outfit-->
-        <div id="mieiOutfit" class="row d-flex aling-item-center justify-content-center m-2 p-2"></div>
+        <div id="mieiOutfit" class="row d-flex aling-item-center justify-content-center m-1 d-none"></div>
         <!--  MOSTRO Articoli-->
-        <div id="mieiArticoli" class="row d-flex aling-item-center justify-content-center m-2 p-2">
-        </div>
+        <div id="mieiArticoli" class="row d-flex aling-item-center justify-content-start m-1"></div>
     </main>
 
     <script>
@@ -307,9 +491,10 @@
         let tipoValue = "";
         let coloreValue = "";
         let stagioneValue = "";
+        let currentUser = null;
         let categoria = ["Categoria", "Top", "Bottom", "Scarpe", "Outerwear", "Accessori"];
         let tipo = ["Tipo", /* TOP */ "T-shirt", "Camicia", "Felpa", "Maglione", "Polo", /* BOTTOM */ "Jeans", "Pantaloni", "Pantaloni eleganti", "Shorts", "Gonna",
-                                    /* SCARPE */ "Sneakers", "Stivali", "Scarpe", "Sandali", /* OUTERWEAR */ "Giacca", "Cappotto", "Giubbotto"];
+                                                                            /* SCARPE */ "Sneakers", "Stivali", "Scarpe", "Sandali", /* OUTERWEAR */ "Giacca", "Cappotto", "Giubbotto"];
         let colore = ["Colore", "Nero", "Bianco", "Grigio", "Beige", "Marrone", "Blu", "Azzurro", "Verde", "Rosso", "Bordeaux", "Giallo", "Arancione", "Rosa", "Viola", "Multicolore"];
         let stagione = ["Stagione", "Estate", "Inverno", "Mezza Stagione"];
 
@@ -326,10 +511,12 @@
             }
         )
 
-        //--------------------------------------------------------------------------------------- DATI INIZIALI   
+        //--------------------------------------------------------------------------------------- DATI INIZIALI
 
-       visualizzaDiv("Outfit");
-       visualizzaOutfit(false);
+        login();
+
+        visualizzaDiv("Outfit");
+        visualizzaOutfit(false);
 
         /*
                                                 Articolo
@@ -338,36 +525,29 @@
         //--------------------------------------------------------------------------------------- BTN AGGIUNGI ARTICOLO NUOVO
         document.getElementById("btnAggiungiArticolo").addEventListener("click", function () {
 
-            visualizzaDiv("AggiungiArticolo");
-            aggiungiArticolo();
+            DettagliArticoloModal("InserisciArticolo");
 
-            //Popola Select --> IdSelect , DefaultValue, array
-            popolaSelect("Categoria", "Categoria", categoria);
-            popolaSelect("Tipo", "Tipo", tipo);
-            popolaSelect("Colore", "Colore", colore);
-            popolaSelect("Stagione", "Stagione", stagione);
         });
 
         //--------------------------------------------------------------------------------------- BTN SALVA ARTICOLO NUOVO
         document.getElementById("btnNuovoArticolo").addEventListener("click", function () {
-            salvaNuovoArticolo();
+            InserisciNuovoArticolo();
         });
 
         //--------------------------------------------------------------------------------------- BTN MODIFICO ARTICOLO
         document.getElementById("btnModificaArticolo").addEventListener("click", function () {
-            visualizzaDiv("ModificaArticolo");
-            modificaArticolo();
+            DettagliArticoloModal("ModificaArticolo");
         });
 
         //--------------------------------------------------------------------------------------- BTN MODIFICO ARTICOLO
         document.getElementById("btnSalvaModificheArticolo").addEventListener("click", function () {
-            salvaModificheArticolo("BtnSalva");
+            SalvaModificheArticolo("BtnSalva");
         });
 
 
         //--------------------------------------------------------------------------------------- BTN ELIMINO ARTICOLO
         document.getElementById("btnEliminaArticolo").addEventListener("click", function () {
-            eliminaArticolo();
+            EliminaArticolo();
         });
 
         //--------------------------------------------------------------------------------------- BTN ARTICOLI PREFERITI
@@ -425,10 +605,11 @@
             coloreValue = "";
             stagioneValue = "";
 
+            document.getElementById("filterTitle").value = "";
+
             //Mostro i Div che servono
             visualizzaDiv("MioArmadio");
 
-            //mostraArticoli();
             visualizzaArticoli("mieiArticoli", "Articoli", "MioArmadio");
 
             //Popola Select --> IdSelect , DefaultValue, array
@@ -477,7 +658,6 @@
             //Mostro i Div che servono
             visualizzaDiv("MioArmadio");
 
-            //mostraArticoli();
             visualizzaArticoli("mieiArticoli", "Articoli", "MioArmadio");
 
             //Popola Select --> IdSelect , DefaultValue, array
@@ -487,7 +667,6 @@
             popolaSelect("StagioneFiltro", "Stagione", stagione);
         });
 
-
         /*
             2. Ordinamento
             3. Outfit random
@@ -496,8 +675,27 @@
             6.Mostro rotella di caricamento
 
         */
+
+        //--------------------------------------------------------------------------------------- BTN LOGIN
+        document.getElementById("btnLogin").addEventListener("click", function (e) {
+            e.preventDefault(); //BLOCCA refresh
+            login(client);
+        });
+
+
+        //--------------------------------------------------------------------------------------- BTN CAMBIA PSW
+        document.getElementById("btnCambiaPsw").addEventListener("click", function (e) {
+            document.getElementById("divCambiaPsw").classList.remove("d-none");
+        });
+
+        document.getElementById("btnSalvaNuovaPsw").addEventListener("click", function (e) {
+            e.preventDefault(); //BLOCCA refresh
+            cambiaPassword();
+            document.getElementById("divCambiaPsw").classList.add("d-none");
+        });
+
     </script>
 
 </body>
 </html>
-<!-- 476 -->
+<!-- 577 -->
