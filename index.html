@@ -128,7 +128,6 @@
             border: none;
             /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);*/
         }
-
             .dynamic-btn:hover,
             .dynamic-btn:active {
                 transform: scale(1.05); /* Leggera espansione al passaggio del mouse */
@@ -176,21 +175,8 @@
                 box-shadow: 0 10px 25px rgba(0,0,0,0.08);
             }
 
-        /* OVERLAY */
-        /*.overlay {
-            position: absolute;
-            inset: 0;
-            background: rgba(0,0,0,0.35);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            font-size: 14px;
-            opacity: 0;
-            transition: 0.3s;
-        }*/
 
-        .card-item:hover /*.overlay*/{
+        .card-item:hover{
             opacity: 1;
         }
 
@@ -218,17 +204,6 @@
                 color: red; /* Colore del cuore quando è selezionato */
             }
 
-
-
-
-
-
-
-
-
-
-
-
         /* Upload */
         .upload-box {
             border: 2px dashed #5C8B6E;
@@ -250,6 +225,28 @@
                 margin-top: 10px;
             }
 
+
+        .grid-img {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 90px 90px;
+            gap: 4px;
+        }
+
+            .grid-img img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+        .more-box {
+            background: rgba(0,0,0,0.7);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
 
     </style>
 </head>
@@ -296,12 +293,12 @@
     <nav id="nvbar" class="navbar px-2" style="display:none">
         <div class="row w-100">
             <!-- Menù -->
-            <div class="col-12 col-md-1 d-flex align-items-center gap-3">
+            <div class="col-12 col-md-1 d-flex align-items-center justify-content-start justify-content-md-center gap-3 mb-2 mb-md-0">
                 <button class="btn dynamic-btn p-2" style="background: transparent" data-bs-toggle="offcanvas" data-bs-target="#sidebar"> ☰ </button>
                 <span class="dynamic-text fw-bold text-white" style="font-size: 18px;">Menù</span>
             </div>
             <!-- Filtri Select -->
-            <div class="col-12 col-md-6 d-flex align-items-center justify-content-center">
+            <div class="col-12 col-md-6 d-flex align-items-center justify-content-center mb-2 mb-md-0">
                 <div id="divFiltri" class="d-flex gap-2 d-none">
 
                     <select id="CategoriaFiltro" class="form-select dynamic-text">
@@ -318,7 +315,7 @@
                 </div>
             </div>
             <!--Filtro Cerca + BTN-->
-            <div class="col-12 col-md-5 d-flex align-items-center justify-content-end">
+            <div class="col-12 col-md-5 d-flex align-items-center justify-content-start justify-content-md-end mb-2 mb-md-0">
                 <div id="divFiltroCerca" class="d-flex gap-2 d-none">
                     <input id="filterTitle" type="text" class="dynamic-text" style="background: #e0f2e9;" placeholder="🔍 Cerca...">
                     <button id="resetFiltri" class="btn dynamic-btn p-2 me-2" style="font-size: 18px; background: transparent"> Reset </button>
@@ -359,8 +356,6 @@
             <div class="offcanvas-body">
                 <button id="btnMioArmadio" class="btn dynamic-btn  w-100 text-start p-2 mb-2" style="background: transparent" data-bs-dismiss="offcanvas">📦 Mio armadio</button>
                 <button id="btnVisualizzaOutfit" class="btn dynamic-btn w-100 text-start p-2 mb-2" style="background: transparent" data-bs-dismiss="offcanvas">📋 Outfit</button>
-                <!--<button id="btnAggiungiArticolo" class="btn dynamic-btn w-100 text-start p-2 mb-2" style="background: transparent" data-bs-dismiss="offcanvas">➕ Aggiungi articolo</button>-->
-                <!--<button id="btnNuovoOutfit" class="btn dynamic-btn w-100 text-start p-2 mb-2" style="background: transparent" data-bs-dismiss="offcanvas">👕 Nuovo outfit</button>-->
 
                 <div id="divCambiaPsw" class="d-flex align-items-center justify-content-center gap-2 d-none">
                     <input id="newPass" type="password" class="dynamic-text form-control" placeholder="Nuova password">
@@ -395,7 +390,6 @@
             </div>
         </div>
 
-
         <!--   POP-UP NUOVO / DETAGLI Articolo-->
         <div class="modal modal-xl fade" id="dettagliArticoloModal" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
@@ -418,8 +412,8 @@
                                         <p>📷 Clicca o trascina una foto</p>
                                         <input type="file" id="Foto" hidden onchange="previewImage(event)">
                                         <img id="preview" style="display:none;">
-                                    </div>                                    
-                                </div>                                
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Campi -->
@@ -458,7 +452,7 @@
                     </div>
 
                     <!-- BTN -->
-                    <div class="modal-footer">
+                    <div class="modal-footer d-flex align-items-center justify-content-center justify-content-md-end">
                         <button id="btnNuovoArticolo" class="btn dynamic-btn mt-2" style="background: #5C8B6E;" data-bs-dismiss="modal">➕ Aggiungi</button>
 
                         <div id="divModificaArticolo" style="display: none">
@@ -468,15 +462,39 @@
                                 <button id="btnEliminaArticolo" class="btn dynamic-btn" style="background: #5C8B6E;" data-bs-dismiss="modal">Elimina</button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+        <!--   POP-UP DETAGLI Outfit-->
+        <div class="modal modal-lg fade" id="dettagliOutfitModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content custom-modal">
+
+                    <div class="modal-header" style="background: #5C8B6E;">
+                        <div class="d-flex flex-column align-items-start justify-content-center">
+                            <h3 id="titleOutfitPopUp" class="text-white fw-semibold"></h3>
+                            <span id="dateOutfitPopUp" class="dynamic-text text-white p-0" style="font-size: 12px;"></span>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
 
+                    <!-- #f1f9f4; -->
+                    <div class="modal-body" style="background: #f1f9f4">
+                        <div id="elencoArticoliOutfit" class="row m-2">
+                        </div>
+                    </div>
+                    
+                    <!-- BTN -->
+                    <div class="modal-footer d-flex align-items-center justify-content-center justify-content-md-end">
+                    </div>
                 </div>
             </div>
         </div>
 
         <!--  MOSTRO Outfit-->
-        <div id="mieiOutfit" class="row d-flex aling-item-center justify-content-center m-1 d-none"></div>
+        <div id="mieiOutfit" class="row d-flex aling-item-center justify-content-start m-1 d-none"></div>
         <!--  MOSTRO Articoli-->
         <div id="mieiArticoli" class="row d-flex aling-item-center justify-content-start m-1"></div>
     </main>
@@ -493,8 +511,8 @@
         let stagioneValue = "";
         let currentUser = null;
         let categoria = ["Categoria", "Top", "Bottom", "Scarpe", "Outerwear", "Accessori"];
-        let tipo = ["Tipo", /* TOP */ "T-shirt", "Camicia", "Felpa", "Maglione", "Polo", /* BOTTOM */ "Jeans", "Pantaloni", "Pantaloni eleganti", "Shorts", "Gonna",
-                                                                            /* SCARPE */ "Sneakers", "Stivali", "Scarpe", "Sandali", /* OUTERWEAR */ "Giacca", "Cappotto", "Giubbotto"];
+        let tipo = ["Tipo", /* TOP */ "T-shirt", "Camicia", "Felpa", "Maglione", /* BOTTOM */ "Jeans", "Pantaloni", "Pantaloni eleganti", "Shorts",
+                                                                            /* SCARPE */ "Sneakers", "Scarpe", /* OUTERWEAR */ "Giacca", "Cappotto", "Giubbotto"];
         let colore = ["Colore", "Nero", "Bianco", "Grigio", "Beige", "Marrone", "Blu", "Azzurro", "Verde", "Rosso", "Bordeaux", "Giallo", "Arancione", "Rosa", "Viola", "Multicolore"];
         let stagione = ["Stagione", "Estate", "Inverno", "Mezza Stagione"];
 
@@ -518,6 +536,7 @@
         visualizzaDiv("Outfit");
         visualizzaOutfit(false);
 
+        popolaTuttiSelect();
         /*
                                                 Articolo
         */
@@ -561,25 +580,54 @@
         document.getElementById("CategoriaFiltro").addEventListener("change", function () {
 
             categoriaValue = document.getElementById("CategoriaFiltro").value;
-            visualizzaArticoli("mieiArticoli", "Articoli", "FiltroArticoli");
+
+            if (document.getElementById("mieiArticoli").classList.contains("d-none")) {
+                //Filtro gli Outfit
+                visualizzaOutfit(true, "FiltroArticoli");
+            } else {
+                //Filtro gli Articoli
+                visualizzaArticoli("mieiArticoli", "Articoli", "FiltroArticoli");
+            }
         });
 
         document.getElementById("TipoFiltro").addEventListener("change", function () {
 
             tipoValue = document.getElementById("TipoFiltro").value;
-            visualizzaArticoli("mieiArticoli", "Articoli", "FiltroArticoli");
+
+            if (document.getElementById("mieiArticoli").classList.contains("d-none")) {
+                //Filtro gli Outfit
+                visualizzaOutfit(true, "FiltroArticoli");
+            } else {
+                //Filtro gli Articoli
+                visualizzaArticoli("mieiArticoli", "Articoli", "FiltroArticoli");
+            }
         });
 
         document.getElementById("ColoreFiltro").addEventListener("change", function () {
 
             coloreValue = document.getElementById("ColoreFiltro").value;
-            visualizzaArticoli("mieiArticoli", "Articoli", "FiltroArticoli");
+
+            if (document.getElementById("mieiArticoli").classList.contains("d-none")) {
+                //Filtro gli Outfit
+                visualizzaOutfit(true, "FiltroArticoli");
+            } else {
+                //Filtro gli Articoli
+                visualizzaArticoli("mieiArticoli", "Articoli", "FiltroArticoli");
+            }
         });
 
         document.getElementById("StagioneFiltro").addEventListener("change", function () {
 
             stagioneValue = document.getElementById("StagioneFiltro").value;
-            visualizzaArticoli("mieiArticoli", "Articoli", "FiltroArticoli");
+
+            if (document.getElementById("mieiArticoli").classList.contains("d-none")) {
+                //Filtro gli Outfit
+                visualizzaOutfit(true, "FiltroArticoli");
+            } else {
+                //Filtro gli Articoli
+                visualizzaArticoli("mieiArticoli", "Articoli", "FiltroArticoli");
+            }
+
         });
 
         document.getElementById("filterTitle").addEventListener("input", function () {
@@ -588,13 +636,15 @@
             visualizzaDiv("MioArmadio");
 
             //Mostro solo quelli che contengono il VALUE nel Titolo
-            visualizzaArticoli("mieiArticoli", "Articoli", "FiltroTitolo");
+            if (document.getElementById("mieiArticoli").classList.contains("d-none")) {
+                //Filtro gli Outfit
+                visualizzaOutfit(true, "FiltroTitolo");
+            } else {
+                //Filtro gli Articoli
+                visualizzaArticoli("mieiArticoli", "Articoli", "FiltroTitolo");
+            }
 
-            //Popola Select --> IdSelect , DefaultValue, array
-            popolaSelect("CategoriaFiltro", "Categoria", categoria);
-            popolaSelect("TipoFiltro", "Tipo", tipo);
-            popolaSelect("ColoreFiltro", "Colore", colore);
-            popolaSelect("StagioneFiltro", "Stagione", stagione);
+            popolaTuttiSelect();
         });
 
         //--------------------------------------------------------------------------------------- RESET FILTRI
@@ -610,13 +660,15 @@
             //Mostro i Div che servono
             visualizzaDiv("MioArmadio");
 
-            visualizzaArticoli("mieiArticoli", "Articoli", "MioArmadio");
+            if (document.getElementById("mieiArticoli").classList.contains("d-none")) {
+                //Filtro gli Outfit
+                visualizzaOutfit(true, "FiltroTitolo");
+            } else {
+                //Filtro gli Articoli
+                visualizzaArticoli("mieiArticoli", "Articoli", "MioArmadio");
+            }            
 
-            //Popola Select --> IdSelect , DefaultValue, array
-            popolaSelect("CategoriaFiltro", "Categoria", categoria);
-            popolaSelect("TipoFiltro", "Tipo", tipo);
-            popolaSelect("ColoreFiltro", "Colore", colore);
-            popolaSelect("StagioneFiltro", "Stagione", stagione);
+            popolaTuttiSelect();
         });
 
         /*
@@ -646,6 +698,8 @@
 
             visualizzaDiv("Outfit");
             visualizzaOutfit(true);
+
+            popolaTuttiSelect();
         });
 
         /*
@@ -660,19 +714,14 @@
 
             visualizzaArticoli("mieiArticoli", "Articoli", "MioArmadio");
 
-            //Popola Select --> IdSelect , DefaultValue, array
-            popolaSelect("CategoriaFiltro", "Categoria", categoria);
-            popolaSelect("TipoFiltro", "Tipo", tipo);
-            popolaSelect("ColoreFiltro", "Colore", colore);
-            popolaSelect("StagioneFiltro", "Stagione", stagione);
+            popolaTuttiSelect();
         });
 
         /*
             2. Ordinamento
             3. Outfit random
             4. N capi / piu usati , meno usati ecc
-            5. alert con messagi di bootrap
-            6.Mostro rotella di caricamento
+            7. al posti di caricare un png dalla galleria scatto direttamente la foto
 
         */
 

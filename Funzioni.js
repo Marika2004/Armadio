@@ -1,4 +1,4 @@
-
+﻿
 console.log("Funzioni.js caricato automaticamente!");
 
 //--------------------------------------------------------------------------------------- FUNZIONI ARTICOLO 
@@ -12,7 +12,7 @@ window.InserisciNuovoArticolo = async function () {
 	const file = document.getElementById("Foto").files[0];
 
 	if (!file) {
-		alert("Seleziona una foto");
+		mostraToast("Seleziona una foto", "danger");
 		return;
 	}
 
@@ -55,7 +55,7 @@ window.InserisciNuovoArticolo = async function () {
 
 	} catch (err) {
 		console.error(err);
-		alert("Errore salvataggio");
+		mostraToast("Errore salvataggio", "danger");
 	}
 	document.getElementById("pageOverlay").style.display = "none";
 }
@@ -173,6 +173,8 @@ window.SalvaModificheArticolo = async function (tipoS, preferita) {
 
 window.visualizzaArticoli = async function (IdLista, table, tipoS) {
 
+	document.getElementById("pageOverlay").style.display = "flex";
+
 	let { data } = await client
 		.from(table)
 		.select('*')
@@ -255,7 +257,7 @@ window.visualizzaArticoli = async function (IdLista, table, tipoS) {
 		}
 
 		// Doppio click
-		div.addEventListener('dblclick', () => {
+		div.addEventListener('click', () => {
 			idArticolo = item.IdArticolo;
 
 			//apro il modal
@@ -306,6 +308,7 @@ window.visualizzaArticoli = async function (IdLista, table, tipoS) {
 			}
 		});
 	})
+	document.getElementById("pageOverlay").style.display = "none";
 }
 
 window.divArticolo = function (tipoS, item) {
@@ -313,25 +316,31 @@ window.divArticolo = function (tipoS, item) {
 	let trovaId = tipoS === "ModificaArticoliSelezionabili" ? arrayId.filter(id => id == item.IdArticolo) : null;
 
 	let div = document.createElement("div")
-	div.className = "col-6 col-md-2";
+
+	if (tipoS === "VisualizzaOutfit") {
+		div.className = "col-6 col-md-3";
+	} else {
+		div.className = "col-6 col-md-2";
+	}
+
 	div.innerHTML = `
 					<div class="card-item mb-4">
 						${tipoS === "ArticoliSelezionabili" || tipoS === "ModificaArticoliSelezionabili" ? '<div class="d-flex flex-column rounded-2 p-2" style="background-color:white">' : ''}
 						<div style="position: relative;">
-							<img src="${item.Immagine}" class="rounded-2 " style="width: 100%; height:250px;">
+							<img src="${tipoS === "VisualizzaOutfit" ? item.Articoli.Immagine : item.Immagine}" class="rounded-2 " style="width: 100%; height:250px;">
 
 							${tipoS === "MioArmadio" || tipoS === "ArticoliPreferiti" || tipoS === "FiltroArticoli" || tipoS === "FiltroTitolo" ? `
 							<label class="cuore-label">
-								<input type="checkbox" style="display: none;" ${item.Preferita ? "checked" : ""}>
-								<span class="cuore">${item.Preferita ? "❤️" : "❤"}</span>
+								<input type="checkbox" style="display: none;" ${( tipoS === "VisualizzaOutfit" ? item.Articoli.Preferita : item.Preferita) ? "checked" : ""}>
+								<span class="cuore">${(tipoS === "VisualizzaOutfit" ? item.Articoli.Preferita : item.Preferita) ? "❤️" : "❤"}</span>
 							</label>
 							` : ''} 
 						<div>
 
 
 						<div class="d-flex flex-column rounded-2 p-2" style="background-color:white">
-							<span class="dynamic-text fw-bold" style="font-weight: 500;">${item.Titolo}</span>
-							<span class="dynamic-text" style="font-size: 12px; color#777";>${item.Colore} • ${item.Categoria}</span>
+							<span class="dynamic-text fw-bold" style="font-weight: 500;">${tipoS === "VisualizzaOutfit" ? item.Articoli.Titolo : item.Titolo}</span>
+							<span class="dynamic-text" style="font-size: 12px; color#777";>${ tipoS === "VisualizzaOutfit" ? item.Articoli.Categoria : item.Categoria} • ${tipoS === "VisualizzaOutfit" ? item.Articoli.Tipo :  item.Tipo}</span>
 							${tipoS === "ArticoliSelezionabili" || tipoS === "ModificaArticoliSelezionabili" ? `<input type="checkbox" class="mb-2" ${tipoS === "ModificaArticoliSelezionabili" && trovaId && trovaId.length > 0 ? "checked" : ""}>` : ''}
 
 						</div>
@@ -367,7 +376,8 @@ window.DettagliArticoloModal = function (tipoS, item) {
 			popolaSelect("Categoria", "Categoria", categoria);
 			popolaSelect("Tipo", "Tipo", tipo);
 			popolaSelect("Colore", "Colore", colore);
-			popolaSelect("Stagione", "Stagione", stagione);			
+			popolaSelect("Stagione", "Stagione", stagione);
+
 
 			//Svuoto Immagine
 			document.getElementById('preview').src = "";
@@ -423,26 +433,12 @@ window.DettagliArticoloModal = function (tipoS, item) {
 	document.getElementById("Stagione").disabled = disabilita;
 }
 
-window.divOutfit_Articolo = function (tipoS, item) {
-
-	let div = document.createElement("div")
-	div.className = "col-6 col-md-2 d-flex flex-column p-2";
-	div.innerHTML = `
-					<img src="${item.Articoli.Immagine}" class="rounded-2 " style="height:200px">
-						
-					<div class="d-flex flex-column rounded-2 p-2" style="background-color:white">
-						<span class="dynamic-text fw-bold">${item.Articoli.Titolo}</span>
-						<span class="dynamic-text">${item.Articoli.Colore}</span>
-						<span class="dynamic-text">${item.Articoli.Categoria}</span>
-					</div>
-				`;
-	return div;
-}
-
 //--------------------------------------------------------------------------------------- FUNZIONI OUTFIT 
-window.visualizzaOutfit = async function (daBtn) {
+window.visualizzaOutfit = async function (daBtn, tipoS) {
 	let i = 0;
 	const oggi = new Date().toISOString().split('T')[0];
+
+	document.getElementById("pageOverlay").style.display = "flex";
 
 	//Prendo solo gli Outfit con la data di oggi
 	let query = client
@@ -479,31 +475,111 @@ window.visualizzaOutfit = async function (daBtn) {
 
 		//Div Che contiene gli Outfit
 		const divGruppo = document.createElement("div");
-		divGruppo.className = "row d-flex aling-items-center justify-content-center";
-		divGruppo.innerHTML = `	
-								<div class="col-12 d-flex flex-row justify-content-between p-2 gap-2">
-									<span class="dynamic-text">Outfit N° ${i} - ${outfit.Titolo}</span>	
-									<span class="dynamic-text">Data: ${outfit.DataUtilizzo}</span>	
-									<div>
-										<button id="btnDuplicaOutfit" class="btn dynamic-btn btn-success p-2">📚 Duplica</button>
-										<button id="btnModificaOutfit" class="btn dynamic-btn btn-success p-2">✏️ Modifica</button>
-										<button id="btnEliminaOutfit" class="btn dynamic-btn btn-success p-2">🗑️ Elimina</button>
-									</div>
-								</div>
-							`;
+		divGruppo.className = "col-md-6 col-lg-3";
+		divGruppo.innerHTML = `
+		  <div class="card">
+			<div class="grid-img"></div>
 
-		//Posiziono tutti gli articolo per questo Outfit
-		outfit.Outfit_Articoli.forEach(articoli => {
-			let div = divOutfit_Articolo("Outfit", articoli);
-			divGruppo.appendChild(div); if (!articoli) return;			
+			<div class="card-body">
+				<div class="d-flex flex-column justify-content-between mt-3">
+					<span class="dynamic-text fw-bold p-0" style="font-weight: 500;">Outfit N° ${i} - ${outfit.Titolo}</span>
+					<span class="dynamic-text p-0" style="font-size: 12px; color#777";>Data: ${outfit.DataUtilizzo}</span>
+					<span class="dynamic-text p-0" style="font-size: 12px; color#777";>	${outfit.Outfit_Articoli.map(a => a.Articoli.Tipo).join(" • ")}</span>
+				</div>
+
+				<div class="d-flex flex-row justify-content-between mt-3 gap-2">
+					<button id="btnDuplicaOutfit" class="btn dynamic-btn" style="background-color: #5f8f73cc;">📚 Duplica</button>
+					<button id="btnModificaOutfit" class="btn dynamic-btn" style="background-color: #6c757dcc;">✏️ Modifica</button>
+					<button id="btnEliminaOutfit" class="btn dynamic-btn" style="background-color: #dc3545cc;">🗑️ Elimina</button>
+				</div>
+			</div>
+
+		  </div>
+		`;
+
+		const grid = divGruppo.querySelector(".grid-img");
+
+		const articoli = outfit.Outfit_Articoli;
+
+		// massimo 4 celle (3 immagini + contatore)
+		articoli.slice(0, 3).forEach(a => {
+			const img = document.createElement("img");
+			img.src = a.Articoli.Immagine;
+			grid.appendChild(img);
 		});
 
-		lista.appendChild(divGruppo);
+		// se ci sono più immagini
+		if (articoli.length > 3) {
+			const more = document.createElement("div");
+			more.className = "more-box";
+			more.textContent = "+" + (articoli.length - 3);
+			grid.appendChild(more);
+		}
+
+		if (tipoS === "FiltroArticoli" || tipoS === "FiltroTitolo") {
+
+			//Visualizzo solo gli outfit che soddisfano il filtro
+			outfitArticoliTable.forEach(outfit => {
+
+				const articoli = outfit.Outfit_Articoli;
+
+				let visualizzaOutfit = false;
+
+				// Controlla se almeno un articolo soddisfa i filtri
+				for (let a of articoli) {
+
+					if (tipoS === "FiltroArticoli") {
+						if (
+							(categoriaValue == "" || a.Articoli.Categoria === categoriaValue) &&
+							(tipoValue == "" || a.Articoli.Tipo === tipoValue) &&
+							(coloreValue == "" || a.Articoli.Colore === coloreValue) &&
+							(stagioneValue == "" || a.Articoli.Stagione === stagioneValue)
+						) {
+							visualizzaOutfit = true;
+							break;	//Basta un articolo valido
+						}
+
+					} else if (tipoS === "FiltroTitolo") {
+
+						//Mostro solo quelli che contengono il VALUE nel Titolo
+						let filetTitle = document.getElementById("filterTitle").value;
+
+						if (filetTitle === "") {
+							visualizzaOutfit = true;
+							break;	//Basta un articolo valido
+						} else if (item.Titolo.includes(filetTitle)) {
+							visualizzaOutfit = true;
+							break;	//Basta un articolo valido
+						}
+
+					}
+				}
+
+				if (visualizzaOutfit) {
+					lista.appendChild(divGruppo);
+				}
+			});
+		} else {
+			lista.appendChild(divGruppo);
+		}
+
 
 		//Gestisco i click dei BTN
 		const btnDuplica = divGruppo.querySelector('#btnDuplicaOutfit');
 		const btnModifica = divGruppo.querySelector('#btnModificaOutfit');
 		const btnElimina = divGruppo.querySelector('#btnEliminaOutfit');
+
+		// Doppio click
+		divGruppo.addEventListener('click', () => {
+			let outfitSelezionato = outfitArticoliTable.find(item => item.IdOutfit == outfit.IdOutfit);
+
+			//apro il modal
+			const modal = new bootstrap.Modal(document.getElementById('dettagliOutfitModal'));
+			modal.show();
+					
+			DettagliOutfitModal("VisualizzaOutfit", outfitSelezionato);
+
+		});
 
 		btnDuplica.addEventListener('click', async () => {
 
@@ -542,19 +618,17 @@ window.visualizzaOutfit = async function (daBtn) {
 				}
 			}
 
-			alert("Outfit Duplicato con successo!");
+			mostraToast("Outfit Duplicato con successo!", "success");
 
 			visualizzaDiv("Outfit");
-			visualizzaOutfit(false);
+			visualizzaOutfit(daBtn);
 		});
 
 		btnModifica.addEventListener('click', async () => {
 
 			////Mostro il nuovo Outft con flag su articoli già presenti
 			idOutfit = outfit.IdOutfit;
-			arrayId = outfit.IdArticolo;
-
-			console.log(arrayId + "arrayId")
+			arrayId = outfit.Outfit_Articoli.map(a => a.Articoli.IdArticolo);
 
 			visualizzaDiv("ModificaArticoliSelezionabili");
 
@@ -562,6 +636,8 @@ window.visualizzaOutfit = async function (daBtn) {
 		});
 
 		btnElimina.addEventListener('click', async () => {
+
+			if (!confirm("Sicuro di voler eliminare l'outfit??")) { return;}
 
 			//Elimino la ROW (Prima elimino i Figli e dopo il Padre)
 
@@ -587,22 +663,42 @@ window.visualizzaOutfit = async function (daBtn) {
 				return;
 			}
 
-			alert("Outfit Eliminato con successo!");
+			mostraToast("Outfit Eliminato con successo!", "success");
 
 			visualizzaDiv("Outfit");
-			visualizzaOutfit(true);
+			visualizzaOutfit(daBtn);
 		});
 
 		i++;
+	});
+
+	document.getElementById("pageOverlay").style.display = "none";
+}
+
+window.DettagliOutfitModal = async function (tipoS, outfit) {
+
+	//Popola Elenco Articoli
+	const grid = document.getElementById("elencoArticoliOutfit");
+	grid.innerHTML = "";
+
+	document.getElementById("titleOutfitPopUp").textContent = outfit.Titolo;
+	document.getElementById("dateOutfitPopUp").textContent = outfit.DataUtilizzo;
+
+	outfit.Outfit_Articoli.forEach(item => {
+
+		let div = divArticolo(tipoS, item);
+		grid.appendChild(div);
 	});
 }
 
 window.creaOutfit = async function (arrayId) {
 
 	if (arrayId.length < 2) {
-		alert("Attenzione! Seleziona Più di 2 articoli");
+		mostraToast("Attenzione! Seleziona Più di 2 articoli", "danger");
 		return;
 	}
+
+	document.getElementById("pageOverlay").style.display = "flex";
 
 	//Creo Outfit Row
 	const { data, error } = await client
@@ -644,27 +740,50 @@ window.creaOutfit = async function (arrayId) {
 	visualizzaOutfit(true);
 
 	mostraToast("Outfit Creato con successo!", "success");
+
+	document.getElementById("pageOverlay").style.display = "none";
 }
 
 window.salvaModificheOutfit = async function (arrayId) {
 
 	if (arrayId.length < 2) {
-		alert("Attenzione! Seleziona Più di 2 articoli");
+		mostraToast("Attenzione! Seleziona Più di 2 articoli", "danger");
 		return;
 	}
 
-	//Salvo Id dei vari articoli
-	await client
-		.from('Outfit')
-		.update({
-			IdArticoli: arrayId
-		})
-		.eq('IdOutfit', idOutfit)
+	document.getElementById("pageOverlay").style.display = "flex";
 
-	alert("Outfit Modificato con successo!");
+	//Cancelli i vecchi collegamenti
+	const { error: error1 } = await client
+		.from('Outfit_Articoli')
+		.delete()
+		.eq('IdOutfit', idOutfit);
+
+	if (error1) {
+		console.error(error1);
+		mostraToast("Errore nella creazione del Outfit_Articoli", "danger");
+		return;
+	}
+
+	const righe = arrayId.map(id => ({
+		IdOutfit: idOutfit,
+		IdArticolo: id
+	}));
+
+	const { error } = await client
+		.from('Outfit_Articoli')
+		.insert(righe);
+
+	if (error) {
+		console.error(error);
+	}
+
+	mostraToast("Outfit Modificato con successo!", "success");
 
 	visualizzaDiv("Outfit");
 	visualizzaOutfit(true);
+
+	document.getElementById("pageOverlay").style.display = "none";
 }
 
 window.divDatiOutfit = function () {
@@ -697,13 +816,14 @@ window.visualizzaDiv = function (tipoS) {
 			document.getElementById("sottoTitolo").textContent = "";
 
 			//Mostro / Nascondo DIV
-			document.getElementById("mieiArticoli").style.display = "block";
+			document.getElementById("mieiArticoli").classList.remove("d-none");
 			document.getElementById("btnCreaOutfit").style.display = "none";
 			document.getElementById("btnArticoliPreferiti").style.display = "block";
 			document.getElementById("divFiltri").classList.remove("d-none");
 			document.getElementById("divFiltroCerca").classList.remove("d-none");
 			document.getElementById("btnAggiungiArticolo").style.display = "block";	
 			document.getElementById("mieiOutfit").classList.add("d-none");
+			
 			document.getElementById("btnNuovoOutfit").style.display = "none";
 			break;
 		
@@ -713,7 +833,7 @@ window.visualizzaDiv = function (tipoS) {
 			document.getElementById("sottoTitolo").textContent = "";
 
 			//Mostro / Nascondo DIV
-			document.getElementById("mieiArticoli").style.display = "block";
+			document.getElementById("mieiArticoli").classList.remove("d-none");
 			document.getElementById("btnArticoliPreferiti").style.display = "none";
 			document.getElementById("divFiltri").classList.add("d-none");
 			document.getElementById("divFiltroCerca").classList.add("d-none");
@@ -730,15 +850,16 @@ window.visualizzaDiv = function (tipoS) {
 			document.getElementById("sottoTitolo").textContent = "";
 
 			//Mostro / Nascondo DIV
-			document.getElementById("mieiArticoli").style.display = "none"
+			document.getElementById("mieiArticoli").classList.add("d-none");
 			document.getElementById("mieiArticoli").innerHTML = "";
 			document.getElementById("btnCreaOutfit").style.display = "none";
 			document.getElementById("btnArticoliPreferiti").style.display = "none";
-			document.getElementById("divFiltri").classList.add("d-none");
-			document.getElementById("divFiltroCerca").classList.add("d-none");
+			document.getElementById("divFiltri").classList.remove("d-none");
+			document.getElementById("divFiltroCerca").classList.remove("d-none");
 			document.getElementById("btnAggiungiArticolo").style.display = "none";	
-			document.getElementById("mieiOutfit").classList.remove("d-none");
+			document.getElementById("mieiOutfit").classList.remove("d-none");			
 			document.getElementById("btnNuovoOutfit").style.display = "block";
+			document.getElementById("btnModificaOutfit").style.display = "none";
 			break;
 		case "ArticoliPreferiti":
 			document.getElementById("btnArticoliPreferiti").style.display = "none";
@@ -751,13 +872,12 @@ window.visualizzaDiv = function (tipoS) {
 			document.getElementById("sottoTitolo").textContent = "";
 
 			//Mostro / Nascondo DIV
-			document.getElementById("mieiArticoli").style.display = "block";
+			document.getElementById("mieiArticoli").classList.remove("d-none");
 			document.getElementById("btnArticoliPreferiti").style.display = "none";
 			document.getElementById("divFiltri").classList.add("d-none");
 			document.getElementById("divFiltroCerca").classList.add("d-none");
 			document.getElementById("btnCreaOutfit").style.display = "none";
 			document.getElementById("btnModificaOutfit").style.display = "block";
-			document.getElementById("btnCreaOutfit").style.display = "block";
 			document.getElementById("btnAggiungiArticolo").style.display = "none";
 			document.getElementById("mieiOutfit").classList.add("d-none");
 			document.getElementById("btnNuovoOutfit").style.display = "none";
@@ -801,16 +921,19 @@ window.mostraToast = function (messaggio, tipo = "success") {
 }
 
 window.login = async function () {
+
+	document.getElementById("pageOverlay").style.display = "flex";
+
 	const email = document.getElementById("email").value;
 	const password = document.getElementById("password").value;
 
 	const { data, error } = await client.auth.signInWithPassword({
-		email: email,
-		password: password
+		email: "prova@gmail.com",
+		password: "1234_M"
 	});
 
 	if (error) {
-		alert("Errore login");
+		mostraToast("Errore login", "danger");
 		return;
 	}
 
@@ -824,13 +947,15 @@ window.login = async function () {
 	// fai partire app
 	visualizzaDiv("Outfit");
 	visualizzaOutfit(false);
+
+	document.getElementById("pageOverlay").style.display = "none";
 }
 
 window.cambiaPassword = async function () {
 	const nuovaPassword = document.getElementById("newPass").value;
 
 	if (nuovaPassword.length < 6) {
-		alert("Password troppo corta");
+		mostraToast("Password troppo corta", "danger");
 		return;
 	}
 
@@ -840,11 +965,11 @@ window.cambiaPassword = async function () {
 
 	if (error) {
 		console.log(error.message);
-		alert("Errore cambio password");
+		mostraToast("Errore cambio password", "danger");
 		return;
 	}
 
-	alert("Password aggiornata!");
+	mostraToast("Password aggiornata!", "success");
 
 	// opzionale: logout per sicurezza
 	await client.auth.signOut();
@@ -860,4 +985,12 @@ window.previewImage = function (event) {
 	reader.readAsDataURL(event.target.files[0]);
 }
 
+window.popolaTuttiSelect = function () {
+
+	//Popola Select --> IdSelect , DefaultValue, array
+	popolaSelect("CategoriaFiltro", "Categoria", categoria);
+	popolaSelect("TipoFiltro", "Tipo", tipo);
+	popolaSelect("ColoreFiltro", "Colore", colore);
+	popolaSelect("StagioneFiltro", "Stagione", stagione);
+}
 //847
