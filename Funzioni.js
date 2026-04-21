@@ -256,8 +256,12 @@ window.visualizzaArticoli = async function (IdLista, table, tipoS) {
 			lista.appendChild(div);
 		}
 
-		// Doppio click
-		div.addEventListener('click', () => {
+		// click
+		div.addEventListener('click', (e) => {
+			//Blocco la continuazione del Click se premo sul cuore
+			if (e.target.closest('.cuore-label')) return;
+			
+
 			idArticolo = item.IdArticolo;
 
 			//apro il modal
@@ -271,7 +275,7 @@ window.visualizzaArticoli = async function (IdLista, table, tipoS) {
 		//Metto tra i preferiti
 		const checkbox = div.querySelector('input[type="checkbox"]');
 
-		checkbox.addEventListener('change', () => {
+		checkbox.addEventListener('change', () => {			
 			idArticolo = item.IdArticolo;
 
 			switch (tipoS) {
@@ -341,20 +345,28 @@ window.divArticolo = function (tipoS, item) {
 						<div class="d-flex flex-column rounded-2 p-2" style="background-color:white">
 							<span class="dynamic-text fw-bold" style="font-weight: 500;">${tipoS === "VisualizzaOutfit" ? item.Articoli.Titolo : item.Titolo}</span>
 							<span class="dynamic-text" style="font-size: 12px; color#777";>${ tipoS === "VisualizzaOutfit" ? item.Articoli.Categoria : item.Categoria} • ${tipoS === "VisualizzaOutfit" ? item.Articoli.Tipo :  item.Tipo}</span>
-							${tipoS === "ArticoliSelezionabili" || tipoS === "ModificaArticoliSelezionabili" ? `<input type="checkbox" class="mb-2" ${tipoS === "ModificaArticoliSelezionabili" && trovaId && trovaId.length > 0 ? "checked" : ""}>` : ''}
+							${tipoS === "ArticoliSelezionabili" || tipoS === "ModificaArticoliSelezionabili"
+								? `
+									<input type="checkbox" class="mb-2" ${tipoS === "ModificaArticoliSelezionabili" && trovaId && trovaId.length > 0 ? "checked" : ""}> 
+									<span class="count-outfit dynamic-text" style="font-size: 12px; color#777";>...</span>
+								`
+								: ''}
 
 						</div>
 						${tipoS === "ArticoliSelezionabili" || tipoS === "ModificaArticoliSelezionabili" ? '</div>' : ''}					
 					</div>
 				`;
 
+	//Conto quanti outfit usano questo articolo
+	const span = div.querySelector('.count-outfit');
+
+	if (span) {
+		contaOutfitPerArticolo(item.IdArticolo).then(count => {
+			span.textContent = `Usato per ${count} Outfit`;
+		});
+	}
+
 	return div;
-
-	/*
-
-							<div class="overlay">
-								<span>👁 Visualizza</span>
-							</div> */
 
 }
 
@@ -467,6 +479,7 @@ window.visualizzaOutfit = async function (daBtn, tipoS) {
 
 	if (outfitArticoliTable.length == 0) {
 		document.getElementById("sottoTitolo").textContent = "Nessun outfit creato";
+		document.getElementById("pageOverlay").style.display = "none";
 		return;
 	}
 
@@ -547,7 +560,7 @@ window.visualizzaOutfit = async function (daBtn, tipoS) {
 						if (filetTitle === "") {
 							visualizzaOutfit = true;
 							break;	//Basta un articolo valido
-						} else if (item.Titolo.includes(filetTitle)) {
+						} else if (a.Articoli.Titolo.includes(filetTitle)) {
 							visualizzaOutfit = true;
 							break;	//Basta un articolo valido
 						}
@@ -570,7 +583,10 @@ window.visualizzaOutfit = async function (daBtn, tipoS) {
 		const btnElimina = divGruppo.querySelector('#btnEliminaOutfit');
 
 		// Doppio click
-		divGruppo.addEventListener('click', () => {
+		divGruppo.addEventListener('click', (e) => {
+			//Blocco la continuazione del Click se premo sul cuore
+			if (e.target.closest('button')) return;
+
 			let outfitSelezionato = outfitArticoliTable.find(item => item.IdOutfit == outfit.IdOutfit);
 
 			//apro il modal
@@ -805,6 +821,45 @@ window.divDatiOutfit = function () {
 
 }
 
+window.contaOutfitPerArticolo = async function (idArticolo) {
+
+
+	document.getElementById("pageOverlay").style.display = "flex";
+
+	const { data: outfitArticoliTable, error } = await client
+		.from('Outfit')
+		.select(`
+		*,
+		Outfit_Articoli(
+			Articoli(*)
+		)
+	`);
+		
+	if (error) {
+		console.error(error);
+		mostraToast("Errore nella creazione del outfit", "danger");
+		return;
+	}
+
+	//Conto quanti outfit usano questo articolo
+	let conta = 0;
+
+	outfitArticoliTable.forEach(outfit => {
+
+		const articoli = outfit.Outfit_Articoli;
+
+		// Controlla se almeno un articolo soddisfa i filtri
+		for (let a of articoli) {
+			if (a.Articoli.IdArticolo === idArticolo) {
+				conta++;
+			}
+		}
+	});
+
+	document.getElementById("pageOverlay").style.display = "none";
+
+	return conta;
+}
 //--------------------------------------------------------------------------------------- FUNZIONI VARIE
 window.visualizzaDiv = function (tipoS) {
 
@@ -845,8 +900,9 @@ window.visualizzaDiv = function (tipoS) {
 			document.getElementById("btnNuovoOutfit").style.display = "none";
 			break;
 		case "Outfit":
+		case "OutfitDiOggi":
 			//Titolo
-			document.getElementById("title").textContent = "Outfit creati";
+			document.getElementById("title").textContent = tipoS === "Outfit" ? "Outfit creati" : "Outfit di Oggi";
 			document.getElementById("sottoTitolo").textContent = "";
 
 			//Mostro / Nascondo DIV
@@ -920,6 +976,19 @@ window.mostraToast = function (messaggio, tipo = "success") {
 	toast.show();
 }
 
+//Connesione al DB
+window.client = supabase.createClient(
+	'https://scutvzratunegnqrnmkc.supabase.co',
+	'sb_publishable_4swbXQMuEvUMfnXEvNUaTw_58HTnde1',
+	{
+		auth: {
+			persistSession: true,
+			autoRefreshToken: true,
+			detectSessionInUrl: false,
+		}
+	}
+);
+
 window.login = async function () {
 
 	document.getElementById("pageOverlay").style.display = "flex";
@@ -928,8 +997,8 @@ window.login = async function () {
 	const password = document.getElementById("password").value;
 
 	const { data, error } = await client.auth.signInWithPassword({
-		email: "prova@gmail.com",
-		password: "1234_M"
+		email: email,
+		password: password
 	});
 
 	if (error) {
@@ -937,18 +1006,12 @@ window.login = async function () {
 		return;
 	}
 
-	currentUser = data.user;
-	document.getElementById("spanUser").textContent = data.user.email.split("@")[0];
-
-	document.getElementById("loginDiv").style.display = "none";
-	document.getElementById("nvbar").style.display = "block";
-	document.getElementById("main").style.display = "block";
-
-	// fai partire app
-	visualizzaDiv("Outfit");
-	visualizzaOutfit(false);
+	// 🔥 IMPORTANTISSIMO: lascia tempo al browser di scrivere sessione
+	await new Promise(resolve => setTimeout(resolve, 150));
 
 	document.getElementById("pageOverlay").style.display = "none";
+
+	window.location.href = "/Armadio.html";	
 }
 
 window.cambiaPassword = async function () {
@@ -993,4 +1056,5 @@ window.popolaTuttiSelect = function () {
 	popolaSelect("ColoreFiltro", "Colore", colore);
 	popolaSelect("StagioneFiltro", "Stagione", stagione);
 }
-//847
+
+//1004
