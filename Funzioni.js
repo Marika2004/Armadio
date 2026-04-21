@@ -1017,7 +1017,9 @@ window.login = async function () {
 
 	document.getElementById("pageOverlay").style.display = "none";
 
+	alert("1 - " + window.location.pathname);
 	window.location.href = "Armadio.html";	
+	alert("2 - " + window.location.pathname);
 }
 
 window.cambiaPassword = async function () {
