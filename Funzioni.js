@@ -1016,10 +1016,8 @@ window.login = async function () {
 	await new Promise(resolve => setTimeout(resolve, 150));
 
 	document.getElementById("pageOverlay").style.display = "none";
-
-	alert("1 - " + window.location.pathname);
+	
 	window.location.href = "Armadio.html";	
-	alert("2 - " + window.location.pathname);
 }
 
 window.cambiaPassword = async function () {
