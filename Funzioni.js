@@ -977,7 +977,9 @@ window.mostraToast = function (messaggio, tipo = "success") {
 }
 
 //Connesione al DB
-window.client = supabase.createClient(
+const { createClient } = supabase;
+
+window.client = createClient(
 	'https://scutvzratunegnqrnmkc.supabase.co',
 	'sb_publishable_4swbXQMuEvUMfnXEvNUaTw_58HTnde1',
 	{
