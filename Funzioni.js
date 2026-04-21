@@ -964,6 +964,10 @@ window.popolaSelect = function (idSelect, defaultOption, array) {
 }
 
 window.mostraToast = function (messaggio, tipo = "success") {
+
+	//Chiudo caricamento
+	document.getElementById("pageOverlay").style.display = "none";
+
 	const toastEl = document.getElementById("liveToast");
 	const toastBody = document.getElementById("toastMessage");
 
@@ -1013,7 +1017,7 @@ window.login = async function () {
 
 	document.getElementById("pageOverlay").style.display = "none";
 
-	window.location.href = "Armadio/Armadio.html";	
+	window.location.href = "/Armadio.html";	
 }
 
 window.cambiaPassword = async function () {
