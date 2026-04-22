@@ -1,7 +1,7 @@
 ﻿
 console.log("Funzioni.js caricato automaticamente!");
 
-/**
+/*
  * quando elimino/aggiorno un articolo elimino l immagine vecchia 
  */
 
@@ -418,6 +418,8 @@ window.DettagliArticoloModal = function (tipoS, item) {
 			//Svuoto Immagine
 			document.getElementById('preview').src = "";
 			document.getElementById('preview').style.display = 'none';
+
+			document.getElementById("Titolo").value = "";
 
 			break;
 		case "VisualizzaArticolo":
