@@ -1,7 +1,8 @@
 ﻿
 console.log("Funzioni.js caricato automaticamente!");
 
-//--------------------------------------------------------------------------------------- FUNZIONI ARTICOLO 
+//--------------------------------------------------------------------------------------- FUNZIONI ARTICOLO
+
 window.InserisciNuovoArticolo = async function () {
 
 	const Titolo = document.getElementById("Titolo").value;
@@ -9,7 +10,7 @@ window.InserisciNuovoArticolo = async function () {
 	const Tipo = document.getElementById("Tipo").value;
 	const Colore = document.getElementById("Colore").value;
 	const Stagione = document.getElementById("Stagione").value;
-	const file = document.getElementById("Foto").files[0];
+	const file = await comprimi(document.getElementById("Foto").files[0]);
 
 	if (!file) {
 		mostraToast("Seleziona una foto", "danger");
@@ -113,7 +114,7 @@ window.SalvaModificheArticolo = async function (tipoS, preferita) {
 			const Colore = document.getElementById("Colore").value;
 			const Stagione = document.getElementById("Stagione").value;
 			let Immagine = document.getElementById("preview").src;	//Quella già salvata
-			const file = document.getElementById("Foto").files[0];
+			const file = await comprimi(document.getElementById("Foto").files[0]);
 
 			//Cambio Img se è stata cambiata
 			if (file) {
@@ -260,6 +261,7 @@ window.visualizzaArticoli = async function (IdLista, table, tipoS) {
 		div.addEventListener('click', (e) => {
 			//Blocco la continuazione del Click se premo sul cuore
 			if (e.target.closest('.cuore-label')) return;
+			if (e.target.closest('input[type="checkbox"]')) return;
 			
 
 			idArticolo = item.IdArticolo;
@@ -805,13 +807,13 @@ window.salvaModificheOutfit = async function (arrayId) {
 window.divDatiOutfit = function () {
 
 	let div = document.createElement("div")
-	div.className = "row";
+	div.className = "row mb-2";
 	div.innerHTML = `
-					<div class="col-2 d-flex align-items-center justify-content-start flex-row p-2">
+					<div class="col-12 col-md-2 d-flex align-items-center justify-content-start flex-row p-2">
 						<span class="dynamic-text fw-bold" style="width: 45px;">Data</span>
 						<input type="date" id="Titolo" class="dynamic-text form-control">
 					</div>
-					<div class="col-5 d-flex align-items-center justify-content-start flex-row p-2">
+					<div class="col-12 col-md-5 d-flex align-items-center justify-content-start flex-row p-2">
 						<span class="dynamic-text fw-bold" style="width: 110px;">Titolo Outfit</span>
 						<input type="text" id="Titolo" class="dynamic-text form-control">
 					</div>					
@@ -1016,7 +1018,7 @@ window.login = async function () {
 	await new Promise(resolve => setTimeout(resolve, 150));
 
 	document.getElementById("pageOverlay").style.display = "none";
-	
+
 	window.location.href = "Armadio.html";	
 }
 
@@ -1061,6 +1063,25 @@ window.popolaTuttiSelect = function () {
 	popolaSelect("TipoFiltro", "Tipo", tipo);
 	popolaSelect("ColoreFiltro", "Colore", colore);
 	popolaSelect("StagioneFiltro", "Stagione", stagione);
+}
+
+async function comprimi(file) {
+
+	//Comprimo le immagini prima di salvarle 
+	const img = await createImageBitmap(file);
+	const canvas = document.createElement("canvas");
+
+	const maxW = 1024;
+	const scale = Math.min(1, maxW / img.width);
+
+	canvas.width = img.width * scale;
+	canvas.height = img.height * scale;
+
+	canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+
+	return new Promise(res =>
+		canvas.toBlob(b => res(new File([b], file.name, { type: "image/jpeg" })), "image/jpeg", 0.7)
+	);
 }
 
 //1004
