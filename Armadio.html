@@ -346,7 +346,7 @@
         <div class="d-flex aling-item-center justify-content-between mb-3">
             <div>
                 <h3 id="title" class="fw-bold"></h3>
-                <span id="sottoTitolo" class="dynamic-text"></span>
+                <span id="sottoTitolo" class="dynamic-text p-0"></span>
             </div>
             <div>
                 <button id="btnNuovoOutfit" class="btn dynamic-btn p-2" style="background: #5C8B6E">👕 Nuovo outfit</button>
@@ -476,9 +476,14 @@
         let coloreValue = "";
         let stagioneValue = "";
         let currentUser = null;
-        let categoria = ["Categoria", "Top", "Bottom", "Scarpe", "Outerwear", "Accessori"];
-        let tipo = ["Tipo", /* TOP */ "T-shirt", "Camicia", "Felpa", "Maglione", /* BOTTOM */ "Jeans", "Pantaloni", "Pantaloni eleganti", "Shorts",
-                                                                            /* SCARPE */ "Sneakers", "Scarpe", /* OUTERWEAR */ "Giacca", "Cappotto", "Giubbotto"];
+        let categoria = {
+            Categoria: ["Tipo", "T-shirt", "Camicia", "Felpa", "Maglione", "Jeans", "Pantaloni", "Pantaloni eleganti", "Shorts", "Sneakers", "Scarpe", "Giacca", "Cappotto", "Giubbotto"],
+            Top: ["Tipo", "T-shirt", "Camicia", "Felpa", "Felpa con cappuccio", "Maglione"],
+            Bottom: ["Tipo", "Jeans", "Pantaloni", "Pantaloni eleganti", "Shorts"],
+            Scarpe: ["Tipo", "Sneakers", "Scarpe"],
+            Outerwear: ["Tipo", "Giacca", "Cappotto", "Giubbotto", "Blazer", "Bomber"],
+            Accessori: ["Tipo", "Cappello", "Berretto", "Cintura", "Orologio", "Occhiali da sole", "Zaino", "Gioielli"]
+        };
         let colore = ["Colore", "Nero", "Bianco", "Grigio", "Beige", "Marrone", "Blu", "Azzurro", "Verde", "Rosso", "Bordeaux", "Giallo", "Arancione", "Rosa", "Viola", "Multicolore"];
         let stagione = ["Stagione", "Estate", "Inverno", "Mezza Stagione"];
 
@@ -554,6 +559,10 @@
         document.getElementById("CategoriaFiltro").addEventListener("change", function () {
 
             categoriaValue = document.getElementById("CategoriaFiltro").value;
+
+            //Popola TIPO
+            popolaSelect("TipoFiltro", "Tipo", categoria[categoriaValue]);
+
 
             if (document.getElementById("mieiArticoli").classList.contains("d-none")) {
                 //Filtro gli Outfit

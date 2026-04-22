@@ -1,6 +1,10 @@
 ﻿
 console.log("Funzioni.js caricato automaticamente!");
 
+/**
+ * quando elimino/aggiorno un articolo elimino l immagine vecchia 
+ */
+
 //--------------------------------------------------------------------------------------- FUNZIONI ARTICOLO
 
 window.InserisciNuovoArticolo = async function () {
@@ -67,14 +71,30 @@ window.EliminaArticolo = async function () {
 
 	document.getElementById("pageOverlay").style.display = "flex";
 
-	//Elimino la ROW
-	const { data, error } = await client
+	//Elimino la ROW (Prima elimino i Figli e dopo il Padre)
+
+	//Elimino gli outfit con  questo articolo
+
+	const { error: error1 } = await client
+		.from('Outfit_Articoli')
+		.delete()
+		.eq('IdArticolo', idArticolo);
+
+	if (error1) {
+		console.error(error1);
+		mostraToast("Errore nella creazione del Outfit_Articoli", "danger");
+		return;
+	}
+		
+	//Elimino l articolo
+
+	const { data, error2 } = await client
 		.from('Articoli')
 		.delete()
 		.eq('IdArticolo', idArticolo)
 
-	if (error) {
-		console.error(error);
+	if (error2) {
+		console.error(error2);
 		mostraToast("Errore eliminazione", "danger");
 		return;
 	}
@@ -179,6 +199,9 @@ window.visualizzaArticoli = async function (IdLista, table, tipoS) {
 	let { data } = await client
 		.from(table)
 		.select('*')
+
+	document.getElementById("sottoTitolo").textContent = "Articoli totali " + data.length;
+
 
 	const lista = document.getElementById(IdLista);
 	lista.innerHTML = "";
@@ -387,22 +410,14 @@ window.DettagliArticoloModal = function (tipoS, item) {
 			document.getElementById("titlePopUp").textContent = "Aggiungi nuovo articolo";
 
 			//Popola Select --> IdSelect , DefaultValue, array
-			popolaSelect("Categoria", "Categoria", categoria);
-			popolaSelect("Tipo", "Tipo", tipo);
+			popolaSelect("Categoria", "Categoria", Object.keys(categoria));
+			popolaSelect("Tipo", "Tipo", categoria[document.getElementById("Categoria").value]);
 			popolaSelect("Colore", "Colore", colore);
 			popolaSelect("Stagione", "Stagione", stagione);
-
 
 			//Svuoto Immagine
 			document.getElementById('preview').src = "";
 			document.getElementById('preview').style.display = 'none';
-
-			//Svuoto e rendo editabili i campi
-			document.getElementById("Titolo").value = "";
-			document.getElementById("Categoria").value = "";
-			document.getElementById("Tipo").value = "";
-			document.getElementById("Colore").value = "";
-			document.getElementById("Stagione").value = "";
 
 			break;
 		case "VisualizzaArticolo":
@@ -415,8 +430,8 @@ window.DettagliArticoloModal = function (tipoS, item) {
 			document.getElementById("titlePopUp").textContent = "Modifica articolo";
 
 			//Popola Select --> IdSelect , DefaultValue, array
-			popolaSelect("Categoria", item.Categoria, categoria);
-			popolaSelect("Tipo", item.Tipo, tipo);
+			popolaSelect("Categoria", item.Categoria, Object.keys(categoria));
+			popolaSelect("Tipo", item.Tipo, categoria[document.getElementById("CategoriaFiltro").value]);
 			popolaSelect("Colore", item.Colore, colore);
 			popolaSelect("Stagione", item.Stagione, stagione);
 				
@@ -475,6 +490,8 @@ window.visualizzaOutfit = async function (daBtn, tipoS) {
 	} else {
 		console.log(outfitArticoliTable);
 	}
+
+	document.getElementById("sottoTitolo").textContent = "Outfit totali " + outfitArticoliTable.length;
 
 	const lista = document.getElementById("mieiOutfit");
 	lista.innerHTML = "";
@@ -820,7 +837,6 @@ window.divDatiOutfit = function () {
 				`;
 
 	return div;
-
 }
 
 window.contaOutfitPerArticolo = async function (idArticolo) {
@@ -1059,8 +1075,8 @@ window.previewImage = function (event) {
 window.popolaTuttiSelect = function () {
 
 	//Popola Select --> IdSelect , DefaultValue, array
-	popolaSelect("CategoriaFiltro", "Categoria", categoria);
-	popolaSelect("TipoFiltro", "Tipo", tipo);
+	popolaSelect("CategoriaFiltro", "Categoria", Object.keys(categoria));
+	popolaSelect("TipoFiltro", "Tipo", categoria[document.getElementById("CategoriaFiltro").value]);
 	popolaSelect("ColoreFiltro", "Colore", colore);
 	popolaSelect("StagioneFiltro", "Stagione", stagione);
 }
