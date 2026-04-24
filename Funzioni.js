@@ -1,9 +1,109 @@
 ﻿
 console.log("Funzioni.js caricato automaticamente!");
 
-/*
- * quando elimino/aggiorno un articolo elimino l immagine vecchia 
- */
+//--------------------------------------------------------------------------------------- CHIAMATA AJAX
+async function chiamataAjax_Immagine(OPE, idArticolo, file) {
+
+	switch (OPE) {
+		case "INS":
+			const fileName = Date.now() + "_" + file.name
+
+			await client.storage
+				.from("ImageArticoli")
+				.upload(fileName, file)
+
+			const { data } = client.storage
+				.from("ImageArticoli")
+				.getPublicUrl(fileName)
+
+			return data.publicUrl;
+
+			break;
+		case "DEL":
+			//Recupero immagine e la elimino
+			const { data: articolo, error: errorFetch } = await client
+				.from('Articoli')
+				.select('Immagine')
+				.eq('IdArticolo', idArticolo)
+				.single();
+
+			if (errorFetch) {
+				console.error(errorFetch);
+				mostraToast("Errore recupero immagine", "danger");
+				return;
+			}
+
+			// Estraggo il nome file dall'URL
+			const imageUrl = articolo.Immagine;
+			const fileNameOld = imageUrl.split('/').pop();
+
+			// Elimino immagine dallo storage
+			const { error: errorStorage } = await client.storage
+				.from("ImageArticoli")
+				.remove([fileNameOld]);
+
+			if (errorStorage) {
+				console.error(errorStorage);
+				mostraToast("Errore eliminazione immagine", "danger");
+				return;
+			}
+			break;
+	}
+}
+
+async function chiamataAjax_Articoli(OPE, idArticolo, Titolo, Categoria, Tipo, Colore, Stagione, Preferita, file) {
+
+	switch (OPE) {
+		case "INS":
+			await client
+				.from('Articoli')
+				.insert([{
+					Titolo: Titolo,
+					Categoria: Categoria,
+					Tipo: Tipo,
+					Colore: Colore,
+					Stagione: Stagione,
+					Preferita: Preferita,
+					Immagine: await chiamataAjax_Immagine("INS", "", file),
+					UteIns: currentUser.id
+				}])
+			break;
+		case "UPDPref":
+			await client
+				.from('Articoli')
+				.update({
+					Preferita: Preferita
+				})
+				.eq('IdArticolo', idArticolo)
+			break;
+		case "UPD":
+			await client
+				.from('Articoli')
+				.update({
+					Immagine: file
+					, Titolo: Titolo
+					, Categoria: Categoria
+					, Tipo: Tipo
+					, Colore: Colore
+					, Stagione: Stagione
+					, Preferita: Preferita
+				})
+				.eq('IdArticolo', idArticolo)
+			break;
+		case "DEL":
+			const { data, error2 } = await client
+				.from('Articoli')
+				.delete()
+				.eq('IdArticolo', idArticolo)
+
+			if (error2) {
+				console.error(error2);
+				mostraToast("Errore eliminazione", "danger");
+				return;
+			}
+			break;
+	}
+}
 
 //--------------------------------------------------------------------------------------- FUNZIONI ARTICOLO
 
@@ -25,31 +125,9 @@ window.InserisciNuovoArticolo = async function () {
 
 	try {
 		//Carico Foto
-		const fileName = Date.now() + "_" + file.name
-
-		await client.storage
-			.from("ImageArticoli")
-			.upload(fileName, file)
-
-		const { data } = client.storage
-			.from("ImageArticoli")
-			.getPublicUrl(fileName)
-
-		const imageUrl = data.publicUrl
 
 		//Salvo Row
-		await client
-			.from('Articoli')
-			.insert([{
-				Titolo: Titolo,
-				Categoria: Categoria,
-				Tipo: Tipo,
-				Colore: Colore,
-				Stagione: Stagione,
-				Preferita: false,
-				Immagine: imageUrl,
-				UteIns: currentUser.id
-			}])
+		await chiamataAjax_Articoli("INS", "", Titolo, Categoria, Tipo, Colore, Stagione, false, file);
 
 		mostraToast("Salvato con successo", "success");
 
@@ -85,19 +163,12 @@ window.EliminaArticolo = async function () {
 		mostraToast("Errore nella creazione del Outfit_Articoli", "danger");
 		return;
 	}
-		
+
+	//Recupero immagine e la elimino
+	await chiamataAjax_Immagine("DEL", idArticolo, "");
+
 	//Elimino l articolo
-
-	const { data, error2 } = await client
-		.from('Articoli')
-		.delete()
-		.eq('IdArticolo', idArticolo)
-
-	if (error2) {
-		console.error(error2);
-		mostraToast("Errore eliminazione", "danger");
-		return;
-	}
+	await chiamataAjax_Articoli("DEL", idArticolo, "", "", "", "", "", "", "")
 
 	mostraToast("Articolo eliminato", "success");
 
@@ -118,13 +189,8 @@ window.SalvaModificheArticolo = async function (tipoS, preferita) {
 		case "MioArmadio":
 		case "FiltroArticoli":
 
-			//Salvo Row
-			await client
-				.from('Articoli')
-				.update({
-					Preferita: preferita
-				})
-				.eq('IdArticolo', idArticolo)
+			await chiamataAjax_Articoli("UPDPref", idArticolo, "", "", "", "", "", preferita, "")
+
 			break;
 		case "BtnSalva":
 			//Salvo Modifiche Dettagli
@@ -138,31 +204,15 @@ window.SalvaModificheArticolo = async function (tipoS, preferita) {
 
 			//Cambio Img se è stata cambiata
 			if (file) {
-				const fileName = Date.now() + "_" + file.name;
 
-				await client.storage
-					.from("ImageArticoli")
-					.upload(fileName, file);
+				//Elimino l'immagine
+				await chiamataAjax_Immagine("DEL", idArticolo, "");
 
-				const { data } = client.storage
-					.from("ImageArticoli")
-					.getPublicUrl(fileName);
-
-				Immagine = data.publicUrl;
+				//Salvo la nuova Immagine
+				Immagine = await chiamataAjax_Immagine("INS", "", file);
 			}
 
-			await client
-				.from('Articoli')
-				.update({
-					Immagine: Immagine
-					, Titolo: Titolo
-					, Categoria: Categoria
-					, Tipo: Tipo
-					, Colore: Colore
-					, Stagione: Stagione
-					, Preferita: preferita
-				})
-				.eq('IdArticolo', idArticolo)
+			await chiamataAjax_Articoli("UPD", idArticolo, Titolo, Categoria, Tipo, Colore, Stagione, preferita, Immagine);
 
 			break;
 	}
@@ -892,7 +942,7 @@ window.visualizzaDiv = function (tipoS) {
 
 			//Mostro / Nascondo DIV
 			document.getElementById("mieiArticoli").classList.remove("d-none");
-			document.getElementById("btnCreaOutfit").style.display = "none";
+			document.getElementById("btnSalvaOutfit").style.display = "none";
 			document.getElementById("btnArticoliPreferiti").style.display = "block";
 			document.getElementById("divFiltri").classList.remove("d-none");
 			document.getElementById("divFiltroCerca").classList.remove("d-none");
@@ -912,9 +962,8 @@ window.visualizzaDiv = function (tipoS) {
 			document.getElementById("btnArticoliPreferiti").style.display = "none";
 			document.getElementById("divFiltri").classList.add("d-none");
 			document.getElementById("divFiltroCerca").classList.add("d-none");
-			document.getElementById("btnCreaOutfit").style.display = "block";
+			document.getElementById("btnSalvaOutfit").style.display = "block";
 			document.getElementById("btnModificaOutfit").style.display = "none";
-			document.getElementById("btnCreaOutfit").style.display = "block";
 			document.getElementById("btnAggiungiArticolo").style.display = "none";	
 			document.getElementById("mieiOutfit").classList.add("d-none");
 			document.getElementById("btnNuovoOutfit").style.display = "none";
@@ -928,7 +977,7 @@ window.visualizzaDiv = function (tipoS) {
 			//Mostro / Nascondo DIV
 			document.getElementById("mieiArticoli").classList.add("d-none");
 			document.getElementById("mieiArticoli").innerHTML = "";
-			document.getElementById("btnCreaOutfit").style.display = "none";
+			document.getElementById("btnSalvaOutfit").style.display = "none";
 			document.getElementById("btnArticoliPreferiti").style.display = "none";
 			document.getElementById("divFiltri").classList.remove("d-none");
 			document.getElementById("divFiltroCerca").classList.remove("d-none");
@@ -952,7 +1001,7 @@ window.visualizzaDiv = function (tipoS) {
 			document.getElementById("btnArticoliPreferiti").style.display = "none";
 			document.getElementById("divFiltri").classList.add("d-none");
 			document.getElementById("divFiltroCerca").classList.add("d-none");
-			document.getElementById("btnCreaOutfit").style.display = "none";
+			document.getElementById("btnSalvaOutfit").style.display = "none";
 			document.getElementById("btnModificaOutfit").style.display = "block";
 			document.getElementById("btnAggiungiArticolo").style.display = "none";
 			document.getElementById("mieiOutfit").classList.add("d-none");
@@ -1009,7 +1058,7 @@ window.client = createClient(
 	{
 		auth: {
 			persistSession: true,
-			autoRefreshToken: true,
+			autoRefreshToken: false,
 			detectSessionInUrl: false,
 		}
 	}
@@ -1085,21 +1134,23 @@ window.popolaTuttiSelect = function () {
 
 async function comprimi(file) {
 
-	//Comprimo le immagini prima di salvarle 
-	const img = await createImageBitmap(file);
-	const canvas = document.createElement("canvas");
+	if (file) {
+		//Comprimo le immagini prima di salvarle 
+		const img = await createImageBitmap(file);
+		const canvas = document.createElement("canvas");
 
-	const maxW = 1024;
-	const scale = Math.min(1, maxW / img.width);
+		const maxW = 1024;
+		const scale = Math.min(1, maxW / img.width);
 
-	canvas.width = img.width * scale;
-	canvas.height = img.height * scale;
+		canvas.width = img.width * scale;
+		canvas.height = img.height * scale;
 
-	canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+		canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
 
-	return new Promise(res =>
-		canvas.toBlob(b => res(new File([b], file.name, { type: "image/jpeg" })), "image/jpeg", 0.7)
-	);
+		return new Promise(res =>
+			canvas.toBlob(b => res(new File([b], file.name, { type: "image/jpeg" })), "image/jpeg", 0.7)
+		);
+	}
 }
-
-//1004
+//1156	
+//1173

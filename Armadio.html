@@ -350,7 +350,7 @@
             </div>
             <div>
                 <button id="btnNuovoOutfit" class="btn dynamic-btn p-2" style="background: #5C8B6E">👕 Nuovo outfit</button>
-                <button id="btnCreaOutfit" class="btn dynamic-btn p-2" style="background: #5C8B6E;">➕ Crea outfit</button>
+                <button id="btnSalvaOutfit" class="btn dynamic-btn p-2" style="background: #5C8B6E;">➕ Salva outfit</button>
                 <button id="btnModificaOutfit" class="btn dynamic-btn p-2" style="background: #5C8B6E; display: none">➕ Modifica outfit</button>
                 <button id="btnAggiungiArticolo" class="btn dynamic-btn p-2" style="background: #5C8B6E;" data-bs-toggle="modal" data-bs-target="#dettagliArticoloModal"> ➕ Nuovo </button>
             </div>
@@ -672,7 +672,7 @@
         });
 
         //--------------------------------------------------------------------------------------- BTN CREA OUTFIT NUOVO
-        document.getElementById("btnCreaOutfit").addEventListener("click", function () {
+        document.getElementById("btnSalvaOutfit").addEventListener("click", function () {
             creaOutfit(arrayId);
         });
 
